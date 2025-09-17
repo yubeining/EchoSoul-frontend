@@ -1,8 +1,14 @@
 import React, { useState } from 'react';
 import './App.css';
 
-// 翻译对象
-const translations = {
+// 翻译对象类型定义
+type TranslationKeys = 'home' | 'docs' | 'share' | 'copyLink' | 'shareToWechat' | 'shareToWeibo' | 'getStarted' | 'contactSales' | 'liveDemo' | 'heroDescription' | 'innovation' | 'excellence' | 'creativity' | 'advancedNlp' | 'advancedNlpDesc' | 'multimodalInteraction' | 'multimodalInteractionDesc' | 'proactiveEngagement' | 'proactiveEngagementDesc' | 'persistentMemory' | 'persistentMemoryDesc';
+
+type Translations = {
+  [key in TranslationKeys]: string;
+};
+
+const translations: Record<string, Translations> = {
   en: {
     home: "Home",
     docs: "Documentation", 
@@ -64,7 +70,7 @@ function App() {
   };
 
   // 获取当前语言的翻译
-  const t = (key: string): string => translations[language][key as keyof typeof translations.en] || key;
+  const t = (key: TranslationKeys): string => translations[language][key] || key;
 
   return (
     <div className="App">
