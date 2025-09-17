@@ -84,6 +84,11 @@ body {
   color: #333;
   font-weight: 500;
   transition: color 0.3s ease;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  font-size: inherit;
 }
 
 .nav-link:hover {
@@ -149,45 +154,36 @@ body {
 }
 
 
-.share-btn {
-  background: #165DFF;
-  color: white;
+.github-btn {
+  background: transparent;
+  color: #333;
   border: none;
-  padding: 10px 20px;
+  padding: 8px 12px;
   border-radius: 6px;
-  font-weight: 600;
+  font-weight: 500;
+  font-size: 16px;
   cursor: pointer;
-  transition: all 0.3s ease;
-  position: relative;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-.share-btn:hover {
-  background: #0E4BCC;
-  transform: translateY(-1px);
-}
-
-.share-menu {
-  position: absolute;
-  top: 100%;
-  right: 0;
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 8px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-  padding: 8px 0;
-  min-width: 150px;
-  z-index: 1001;
-}
-
-.share-option {
-  padding: 12px 16px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-.share-option:hover {
+.github-btn:hover {
   background-color: #f5f7fa;
+  color: #165DFF;
 }
+
+.github-icon {
+  width: 20px;
+  height: 20px;
+  transition: fill 0.2s ease;
+}
+
+.github-btn:hover .github-icon {
+  fill: #165DFF;
+}
+
 
 .chevron {
   font-size: 10px;
@@ -196,40 +192,106 @@ body {
 
 /* Button Styles */
 .btn-primary {
-  background: #165DFF;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
   color: white;
   border: none;
   padding: 12px 24px;
-  border-radius: 6px;
+  border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
   text-decoration: none;
   display: inline-block;
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
 }
 
 .btn-primary:hover {
-  background: #0E4BCC;
-  transform: translateY(-1px);
+  background: linear-gradient(135deg, #5a6fd8 0%, #6a4190 100%);
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
 }
 
 .btn-secondary {
   background: white;
-  color: #165DFF;
-  border: 1px solid #165DFF;
+  color: #667eea;
+  border: 1px solid #e2e8f0;
   padding: 12px 24px;
-  border-radius: 6px;
+  border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
   transition: all 0.3s ease;
   text-decoration: none;
   display: inline-block;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .btn-secondary:hover {
-  background: #165DFF;
+  background: #667eea;
   color: white;
-  transform: translateY(-1px);
+  border-color: #667eea;
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+}
+
+/* 在线试用按钮特殊样式 */
+.btn-trial {
+  position: relative;
+  overflow: hidden;
+  border: 2px solid #ff6b6b !important;
+  background: linear-gradient(135deg, #fff 0%, #f8f9ff 100%) !important;
+  color: #ff6b6b !important;
+  animation: trial-glow 2s ease-in-out infinite alternate;
+}
+
+.btn-trial:hover {
+  background: linear-gradient(135deg, #ff6b6b 0%, #ff5252 100%) !important;
+  color: white !important;
+  border-color: #ff5252 !important;
+  transform: translateY(-3px) scale(1.02);
+  box-shadow: 0 8px 25px rgba(255, 107, 107, 0.4);
+}
+
+.trial-text {
+  position: relative;
+  z-index: 2;
+  font-weight: 600;
+}
+
+
+.trial-pulse {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: rgba(255, 107, 107, 0.3);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  animation: pulse-ring 2s ease-out infinite;
+  z-index: 1;
+}
+
+@keyframes trial-glow {
+  0% {
+    box-shadow: 0 0 5px rgba(255, 107, 107, 0.3);
+  }
+  100% {
+    box-shadow: 0 0 20px rgba(255, 107, 107, 0.6);
+  }
+}
+
+
+@keyframes pulse-ring {
+  0% {
+    width: 0;
+    height: 0;
+    opacity: 1;
+  }
+  100% {
+    width: 200px;
+    height: 200px;
+    opacity: 0;
+  }
 }
 
 
