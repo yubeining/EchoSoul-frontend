@@ -54,6 +54,29 @@ const translations: Record<string, Translations> = {
     proactiveEngagementDesc: "基于用户行为模式、上下文感知和智能调度，实现AI驱动的主动式沟通，提供最佳用户体验和参与度。",
     persistentMemory: "持久化记忆系统", 
     persistentMemoryDesc: "先进的记忆架构，维护长期上下文、用户偏好和会话历史，实现个性化和持续的跨会话交互。"
+  },
+  ja: {
+    home: "ホーム",
+    docs: "ドキュメント",
+    share: "共有", 
+    copyLink: "リンクをコピー",
+    shareToWechat: "WeChatで共有",
+    shareToWeibo: "Weiboで共有",
+    getStarted: "始める",
+    contactSales: "開発計画",
+    liveDemo: "ライブデモ", 
+    heroDescription: "自然言語処理、コンピュータビジョン、音声認識、感情計算技術を統合し、独特な個性と感情理解能力を持つ知的インタラクティブパートナーを構築し、ユーザーにより人間的で個性的なAI体験を提供します。",
+    innovation: "革新",
+    excellence: "卓越",
+    creativity: "創造性",
+    advancedNlp: "高度な自然言語処理",
+    advancedNlpDesc: "最先端の自然言語処理モデルを活用し、文脈理解、感情分析、知的会話フローを実現し、多言語をサポートします。",
+    multimodalInteraction: "マルチモーダルインタラクション",
+    multimodalInteractionDesc: "テキスト、音声、画像、動画の入力をサポートし、異なる通信チャネル間のシームレスな統合とリアルタイム処理能力を実現します。",
+    proactiveEngagement: "積極的エンゲージメント",
+    proactiveEngagementDesc: "ユーザーの行動パターン、文脈認識、知的スケジューリングに基づくAI駆動の積極的コミュニケーションにより、最適なユーザー体験とエンゲージメントを提供します。",
+    persistentMemory: "永続メモリシステム", 
+    persistentMemoryDesc: "長期文脈、ユーザー設定、会話履歴を維持する先進的なメモリアーキテクチャにより、セッション間での個性化された継続的なインタラクションを実現します。"
   }
 };
 
@@ -105,7 +128,9 @@ function App() {
             <a href="#docs" className="nav-link">{t('docs')}</a>
             <div className="language-selector" ref={languageMenuRef} onClick={() => setShowLanguageMenu(!showLanguageMenu)}>
               <span className="globe-icon">🌐</span>
-              <span className="lang-text">{language === 'zh' ? '中文' : 'EN'}</span>
+              <span className="lang-text">
+                {language === 'zh' ? '中文' : language === 'en' ? 'EN' : '日本語'}
+              </span>
               <span className="chevron">▼</span>
               
               {showLanguageMenu && (
@@ -121,6 +146,12 @@ function App() {
                     onClick={() => handleLanguageChange('en')}
                   >
                     English
+                  </div>
+                  <div 
+                    className={`language-option ${language === 'ja' ? 'active' : ''}`}
+                    onClick={() => handleLanguageChange('ja')}
+                  >
+                    日本語
                   </div>
                 </div>
               )}
@@ -144,8 +175,9 @@ function App() {
       <section className="hero" id="home">
         <div className="hero-container">
           <div className="hero-content">
-            <h1 className="hero-title">EchoSoul AI Platform</h1>
-            <h2 className="hero-subtitle">多模态AI人格化系统</h2>
+                <h1 className="hero-title">EchoSoul AI Platform</h1>
+                <h2 className="hero-subtitle">多模态AI人格化系统</h2>
+                <h3 className="hero-subtitle-jp">マルチモーダルAI人格化システム</h3>
             <p className="hero-description">
               {t('heroDescription')}
             </p>
