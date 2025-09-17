@@ -303,55 +303,73 @@ body {
   position: relative;
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, #8B5CF6 0%, #A855F7 100%);
-  border-radius: 20px;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-radius: 24px;
   overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
-.floating-card {
+.hero-visual-content {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.visual-element {
   position: absolute;
-  background: white;
-  padding: 24px;
-  border-radius: 16px;
-  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
-  animation: float 6s ease-in-out infinite;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
 }
 
-.card-1 {
+.element-1 {
+  width: 120px;
+  height: 120px;
   top: 20%;
-  left: 10%;
-  animation-delay: 0s;
+  left: 15%;
+  animation: pulse 4s ease-in-out infinite;
 }
 
-.card-2 {
+.element-2 {
+  width: 80px;
+  height: 80px;
+  top: 60%;
+  right: 20%;
+  animation: pulse 4s ease-in-out infinite 1.5s;
+}
+
+.element-3 {
+  width: 100px;
+  height: 100px;
+  bottom: 25%;
+  left: 40%;
+  animation: pulse 4s ease-in-out infinite 3s;
+}
+
+.visual-icon {
+  position: absolute;
   top: 50%;
-  right: 10%;
-  animation-delay: 2s;
-}
-
-.card-3 {
-  bottom: 20%;
-  left: 30%;
-  animation-delay: 4s;
-}
-
-.card-icon {
+  left: 50%;
+  transform: translate(-50%, -50%);
   font-size: 2rem;
-  margin-bottom: 12px;
+  color: white;
+  opacity: 0.8;
 }
 
-.floating-card h3 {
-  color: #333;
-  font-weight: 600;
-  font-size: 1.1rem;
-}
-
-@keyframes float {
+@keyframes pulse {
   0%, 100% {
-    transform: translateY(0px);
+    transform: scale(1);
+    opacity: 0.7;
   }
   50% {
-    transform: translateY(-20px);
+    transform: scale(1.1);
+    opacity: 1;
   }
 }
 
@@ -547,6 +565,29 @@ body {
   
   .hero-buttons {
     gap: 12px;
+  }
+  
+  .hero-visual {
+    height: 300px;
+  }
+  
+  .element-1 {
+    width: 80px;
+    height: 80px;
+  }
+  
+  .element-2 {
+    width: 60px;
+    height: 60px;
+  }
+  
+  .element-3 {
+    width: 70px;
+    height: 70px;
+  }
+  
+  .visual-icon {
+    font-size: 1.5rem;
   }
   
   .btn-primary, .btn-secondary {

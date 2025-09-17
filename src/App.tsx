@@ -187,22 +187,21 @@ function App() {
               <button className="btn-secondary">{t('liveDemo')}</button>
             </div>
           </div>
-          <div className="hero-visual">
-            <div className="hero-placeholder">
-              <div className="floating-card card-1">
-                <div className="card-icon">🚀</div>
-                <h3>{t('innovation')}</h3>
-              </div>
-              <div className="floating-card card-2">
-                <div className="card-icon">💡</div>
-                <h3>{t('creativity')}</h3>
-              </div>
-              <div className="floating-card card-3">
-                <div className="card-icon">🌟</div>
-                <h3>{t('excellence')}</h3>
+            <div className="hero-visual">
+              <div className="hero-placeholder">
+                <div className="hero-visual-content">
+                  <div className="visual-element element-1">
+                    <div className="visual-icon">🚀</div>
+                  </div>
+                  <div className="visual-element element-2">
+                    <div className="visual-icon">💡</div>
+                  </div>
+                  <div className="visual-element element-3">
+                    <div className="visual-icon">🌟</div>
+                  </div>
+                </div>
               </div>
             </div>
-          </div>
         </div>
       </section>
 
