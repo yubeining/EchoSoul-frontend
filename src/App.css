@@ -235,9 +235,9 @@ body {
 
 /* Hero Section */
 .hero {
-  padding: 120px 0 80px;
+  padding: 100px 0 40px;
   background: white;
-  min-height: 100vh;
+  min-height: 70vh;
   display: flex;
   align-items: center;
 }
@@ -248,7 +248,7 @@ body {
   padding: 0 20px;
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 80px;
+  gap: 60px;
   align-items: center;
 }
 
@@ -260,7 +260,7 @@ body {
   font-size: 3.5rem;
   font-weight: 800;
   line-height: 1.1;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   color: #165DFF;
 }
 
@@ -268,14 +268,14 @@ body {
   font-size: 2rem;
   font-weight: 700;
   color: #333;
-  margin-bottom: 32px;
+  margin-bottom: 24px;
   line-height: 1.2;
 }
 
 .hero-description {
   font-size: 1.1rem;
   color: #666;
-  margin-bottom: 48px;
+  margin-bottom: 32px;
   line-height: 1.6;
 }
 
@@ -349,7 +349,7 @@ body {
 
 /* Features Section */
 .features {
-  padding: 100px 0;
+  padding: 60px 0;
   background: white;
 }
 
@@ -482,7 +482,7 @@ body {
   
   .hero-container {
     grid-template-columns: 1fr;
-    gap: 40px;
+    gap: 30px;
     text-align: center;
   }
   
