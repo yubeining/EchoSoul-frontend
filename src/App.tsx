@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import './App.css';
 
 // 翻译对象类型定义
@@ -60,14 +60,31 @@ const translations: Record<string, Translations> = {
 function App() {
   const [language, setLanguage] = useState('zh'); // 默认中文
   const [showShareMenu, setShowShareMenu] = useState(false);
+  const [showLanguageMenu, setShowLanguageMenu] = useState(false);
+  const languageMenuRef = useRef<HTMLDivElement>(null);
 
-  const toggleLanguage = () => {
-    setLanguage(language === 'zh' ? 'en' : 'zh');
+  const handleLanguageChange = (newLanguage: string) => {
+    setLanguage(newLanguage);
+    setShowLanguageMenu(false);
   };
 
   const handleShare = () => {
     setShowShareMenu(!showShareMenu);
   };
+
+  // 点击外部关闭下拉菜单
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (languageMenuRef.current && !languageMenuRef.current.contains(event.target as Node)) {
+        setShowLanguageMenu(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   // 获取当前语言的翻译
   const t = (key: TranslationKeys): string => translations[language][key] || key;
@@ -86,13 +103,28 @@ function App() {
           <div className="nav-right">
             <a href="#home" className="nav-link">{t('home')}</a>
             <a href="#docs" className="nav-link">{t('docs')}</a>
-            <div className="language-selector" onClick={toggleLanguage}>
+            <div className="language-selector" ref={languageMenuRef} onClick={() => setShowLanguageMenu(!showLanguageMenu)}>
               <span className="globe-icon">🌐</span>
               <span className="lang-text">{language === 'zh' ? '中文' : 'EN'}</span>
               <span className="chevron">▼</span>
+              
+              {showLanguageMenu && (
+                <div className="language-menu">
+                  <div 
+                    className={`language-option ${language === 'zh' ? 'active' : ''}`}
+                    onClick={() => handleLanguageChange('zh')}
+                  >
+                    中文
+                  </div>
+                  <div 
+                    className={`language-option ${language === 'en' ? 'active' : ''}`}
+                    onClick={() => handleLanguageChange('en')}
+                  >
+                    English
+                  </div>
+                </div>
+              )}
             </div>
-            <button className="settings-btn">⚙️</button>
-            <button className="feedback-btn">👎</button>
             <button className="share-btn" onClick={handleShare}>
               {t('share')}
             </button>
