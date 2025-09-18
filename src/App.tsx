@@ -4,7 +4,9 @@ import DocsPage from './pages/docs/DocsPage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import DashboardPage from './pages/auth/DashboardPage';
+import ApiTestPage from './pages/auth/ApiTestPage';
 import Navigation from './components/layout/Navigation';
+import { AuthProvider } from './contexts/AuthContext';
 
 // 翻译对象类型定义
 type TranslationKeys = 'home' | 'docs' | 'share' | 'copyLink' | 'shareToWechat' | 'shareToWeibo' | 'getStarted' | 'contactSales' | 'liveDemo' | 'heroDescription' | 'innovation' | 'excellence' | 'creativity' | 'advancedNlp' | 'advancedNlpDesc' | 'multimodalInteraction' | 'multimodalInteractionDesc' | 'proactiveEngagement' | 'proactiveEngagementDesc' | 'persistentMemory' | 'persistentMemoryDesc';
@@ -85,7 +87,7 @@ const translations: Record<string, Translations> = {
   }
 };
 
-function App() {
+function AppContent() {
   const [currentPage, setCurrentPage] = useState('home'); // 当前页面
   const [language, setLanguage] = useState('zh'); // 默认中文
 
@@ -104,6 +106,8 @@ function App() {
       window.history.pushState({}, '', '/register');
     } else if (page === 'dashboard') {
       window.history.pushState({}, '', '/dashboard');
+    } else if (page === 'api-test') {
+      window.history.pushState({}, '', '/api-test');
     } else {
       window.history.pushState({}, '', '/');
     }
@@ -123,6 +127,8 @@ function App() {
         setCurrentPage('register');
       } else if (path === '/dashboard') {
         setCurrentPage('dashboard');
+      } else if (path === '/api-test') {
+        setCurrentPage('api-test');
       } else {
         setCurrentPage('home');
       }
@@ -184,6 +190,11 @@ function App() {
     );
   }
 
+  // 如果当前是API测试页面，渲染API测试页面组件
+  if (currentPage === 'api-test') {
+    return <ApiTestPage />;
+  }
+
   return (
     <div className="App">
       {/* Navigation - 复用组件 */}
@@ -210,6 +221,13 @@ function App() {
                 <button className="btn-secondary btn-trial">
                   <span className="trial-text">{t('liveDemo')}</span>
                   <div className="trial-pulse"></div>
+                </button>
+                <button 
+                  className="btn-secondary" 
+                  onClick={() => handleNavigate('api-test')}
+                  style={{ marginTop: '10px', backgroundColor: '#6f42c1' }}
+                >
+                  API 测试
                 </button>
             </div>
           </div>
@@ -263,6 +281,14 @@ function App() {
         </div>
       </section>
     </div>
+  );
+}
+
+function App() {
+  return (
+    <AuthProvider>
+      <AppContent />
+    </AuthProvider>
   );
 }
 

@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import '../../styles/pages/LoginPage.css';
 import Navigation from '../../components/layout/Navigation';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface LoginPageProps {
   onNavigate: (page: string) => void;
@@ -18,6 +19,7 @@ const LoginPage: React.FC<LoginPageProps> = ({
     password: ''
   });
   const [showPassword, setShowPassword] = useState(false);
+  const { login, isLoading } = useAuth();
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -27,11 +29,30 @@ const LoginPage: React.FC<LoginPageProps> = ({
     }));
   };
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // 这里可以添加登录逻辑
-    console.log('登录数据:', formData);
-    onNavigate('dashboard');
+    
+    if (!formData.username || !formData.password) {
+      alert('请输入用户名和密码');
+      return;
+    }
+
+    try {
+      const success = await login({
+        username: formData.username,
+        password: formData.password,
+      });
+
+      if (success) {
+        alert('登录成功！');
+        onNavigate('dashboard');
+      } else {
+        alert('登录失败，请检查用户名和密码');
+      }
+    } catch (error) {
+      console.error('登录错误:', error);
+      alert('登录失败，请稍后重试');
+    }
   };
 
 
@@ -133,8 +154,12 @@ const LoginPage: React.FC<LoginPageProps> = ({
             </div>
 
 
-            <button type="submit" className="login-button">
-              {t.login}
+            <button 
+              type="submit" 
+              className="login-button"
+              disabled={isLoading}
+            >
+              {isLoading ? '登录中...' : t.login}
             </button>
           </form>
 

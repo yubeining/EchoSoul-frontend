@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import '../../styles/pages/DashboardPage.css';
 import Navigation from '../../components/layout/Navigation';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface DashboardPageProps {
   onNavigate: (page: string) => void;
@@ -14,6 +15,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
   onLanguageChange 
 }) => {
   const [activeMenu, setActiveMenu] = useState('home');
+  const { user, logout } = useAuth();
 
   const handleMenuClick = (menu: string) => {
     setActiveMenu(menu);
@@ -174,16 +176,33 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
             <h1 className="dashboard-title">个人中心</h1>
             <div className="profile-section">
               <div className="profile-card">
-                <div className="profile-avatar">👤</div>
+                <div className="profile-avatar">
+                  {user?.avatar ? (
+                    <img src={user.avatar} alt="头像" />
+                  ) : (
+                    '👤'
+                  )}
+                </div>
                 <div className="profile-info">
-                  <div className="profile-name">游客用户</div>
-                  <div className="profile-email">guest@echosoul.ai</div>
+                  <div className="profile-name">{user?.nickname || '用户'}</div>
+                  <div className="profile-email">
+                    {user?.email || user?.mobile || '未设置联系方式'}
+                  </div>
+                  <div className="profile-username">@{user?.username}</div>
                 </div>
               </div>
               <div className="profile-actions">
                 <button className="profile-action-btn">编辑资料</button>
                 <button className="profile-action-btn">修改密码</button>
-                <button className="profile-action-btn">退出登录</button>
+                <button 
+                  className="profile-action-btn"
+                  onClick={async () => {
+                    await logout();
+                    onNavigate('home');
+                  }}
+                >
+                  退出登录
+                </button>
               </div>
             </div>
           </div>
