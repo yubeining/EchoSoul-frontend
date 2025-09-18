@@ -1,15 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { authApi, apiTester } from '../../services/api';
+import { getEnvironmentInfo } from '../../utils/environment';
 
 const ApiTestPage: React.FC = () => {
   const [testResults, setTestResults] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<any[]>([]);
-
-  // 组件加载时自动测试连接
-  useEffect(() => {
-    testConnections();
-  }, []);
 
   const addResult = (test: string, result: any) => {
     setTestResults(prev => [...prev, { test, result, timestamp: new Date().toLocaleTimeString() }]);
@@ -32,6 +28,11 @@ const ApiTestPage: React.FC = () => {
       setIsLoading(false);
     }
   };
+
+  // 组件加载时自动测试连接
+  useEffect(() => {
+    testConnections();
+  }, [testConnections]);
 
   // 测试注册
   const testRegister = async () => {
@@ -112,9 +113,32 @@ const ApiTestPage: React.FC = () => {
     }
   };
 
+  const envInfo = getEnvironmentInfo();
+
   return (
     <div style={{ padding: '20px', maxWidth: '1200px', margin: '0 auto' }}>
       <h1>API 测试页面</h1>
+      
+      <div style={{ 
+        marginBottom: '20px', 
+        padding: '15px', 
+        backgroundColor: '#e3f2fd', 
+        borderRadius: '8px',
+        border: `2px solid ${envInfo.color}`
+      }}>
+        <h3 style={{ margin: '0 0 10px 0', color: envInfo.color }}>🌍 当前环境信息</h3>
+        <div style={{ display: 'flex', gap: '20px', flexWrap: 'wrap' }}>
+          <div>
+            <strong>环境类型:</strong> {envInfo.name}
+          </div>
+          <div>
+            <strong>前端地址:</strong> {window.location.hostname}
+          </div>
+          <div>
+            <strong>后端地址:</strong> {envInfo.backend}
+          </div>
+        </div>
+      </div>
       
       <div style={{ marginBottom: '20px' }}>
         <h2>连接状态</h2>

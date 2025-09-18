@@ -7,6 +7,7 @@ import DashboardPage from './pages/auth/DashboardPage';
 import ApiTestPage from './pages/auth/ApiTestPage';
 import Navigation from './components/layout/Navigation';
 import { AuthProvider } from './contexts/AuthContext';
+import { isApiTestAvailable } from './utils/environment';
 
 // 翻译对象类型定义
 type TranslationKeys = 'home' | 'docs' | 'share' | 'copyLink' | 'shareToWechat' | 'shareToWeibo' | 'getStarted' | 'contactSales' | 'liveDemo' | 'heroDescription' | 'innovation' | 'excellence' | 'creativity' | 'advancedNlp' | 'advancedNlpDesc' | 'multimodalInteraction' | 'multimodalInteractionDesc' | 'proactiveEngagement' | 'proactiveEngagementDesc' | 'persistentMemory' | 'persistentMemoryDesc';
@@ -190,9 +191,15 @@ function AppContent() {
     );
   }
 
-  // 如果当前是API测试页面，渲染API测试页面组件
+  // 如果当前是API测试页面，渲染API测试页面组件（仅在测试环境）
   if (currentPage === 'api-test') {
-    return <ApiTestPage />;
+    if (isApiTestAvailable()) {
+      return <ApiTestPage />;
+    } else {
+      // 线上环境重定向到首页
+      handleNavigate('home');
+      return null;
+    }
   }
 
   return (
@@ -222,13 +229,16 @@ function AppContent() {
                   <span className="trial-text">{t('liveDemo')}</span>
                   <div className="trial-pulse"></div>
                 </button>
-                <button 
-                  className="btn-secondary" 
-                  onClick={() => handleNavigate('api-test')}
-                  style={{ marginTop: '10px', backgroundColor: '#6f42c1' }}
-                >
-                  API 测试
-                </button>
+                {/* API测试按钮 - 仅在测试环境显示 */}
+                {isApiTestAvailable() && (
+                  <button 
+                    className="btn-secondary" 
+                    onClick={() => handleNavigate('api-test')}
+                    style={{ marginTop: '10px', backgroundColor: '#6f42c1' }}
+                  >
+                    API 测试
+                  </button>
+                )}
             </div>
           </div>
             <div className="hero-visual">

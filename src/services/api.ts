@@ -1,9 +1,33 @@
 // API服务配置和请求工具
-// 使用外部可访问的后端服务地址
-const API_BASE_URLS = [
-  'https://glbbvnrguhix.sealosbja.site',  // 外部可访问地址
-  'http://localhost:8080',  // 本地开发备用
-];
+// 根据环境自动选择对应的后端服务地址
+const getApiBaseUrls = () => {
+  const hostname = window.location.hostname;
+  
+  // 测试环境
+  if (hostname === 'pcbzodaitkpj.sealosbja.site') {
+    return [
+      'https://glbbvnrguhix.sealosbja.site',  // 测试环境后端
+      'http://localhost:8080',  // 本地开发备用
+    ];
+  }
+  
+  // 线上环境
+  if (hostname === 'jqpiogolcznu.sealosbja.site') {
+    return [
+      'https://rmlqwqpmrpnw.sealosbja.site',  // 线上环境后端
+      'https://glbbvnrguhix.sealosbja.site',  // 测试环境备用
+      'http://localhost:8080',  // 本地开发备用
+    ];
+  }
+  
+  // 本地开发环境
+  return [
+    'https://glbbvnrguhix.sealosbja.site',  // 默认使用测试环境
+    'http://localhost:8080',  // 本地开发备用
+  ];
+};
+
+const API_BASE_URLS = getApiBaseUrls();
 
 // API响应接口
 export interface ApiResponse<T = any> {
