@@ -1,86 +1,44 @@
 import React, { useState, useEffect } from 'react';
-import './DocsPage.css';
-import Navigation from './Navigation';
+import '../../styles/pages/DocsPage.css';
+import Navigation from '../../components/layout/Navigation';
+import { autoTranslate } from '../../utils/translation';
 
-type TranslationKeys = 'home' | 'docs' | 'tutorial' | 'login' | 'language' | 'share' | 'copyLink' | 'shareToWechat' | 'shareToWeibo' | 'onThisPage' | 'docCenter' | 'installGuide' | 'userManual' | 'apiReference' | 'techArchitecture' | 'roadmap' | 'overview' | 'envRequirements' | 'deploySteps' | 'verification' | 'quickStart' | 'interfaceIntro' | 'features' | 'faq' | 'authMethod' | 'chatApi' | 'roleConfig' | 'multimediaApi' | 'systemArch' | 'coreComponents' | 'techStack' | 'systemOverview' | 'coreFeatures' | 'techAdvantages';
-
-type Translations = {
-  [key in TranslationKeys]: string;
-};
-
-const translations: Record<string, Translations> = {
-  en: {
-    home: "Home",
-    docs: "Documentation",
-    tutorial: "Tutorial",
-    login: "Login",
-    language: "Language",
-    share: "Share",
-    copyLink: "Copy Link",
-    shareToWechat: "Share to WeChat",
-    shareToWeibo: "Share to Weibo",
-    onThisPage: "On this page",
-    docCenter: "Documentation Center",
-    installGuide: "Installation Guide",
-    userManual: "User Manual",
-    apiReference: "API Reference",
-    techArchitecture: "Technical Architecture",
-    roadmap: "Roadmap",
-    overview: "Overview",
-    envRequirements: "Environment Requirements",
-    deploySteps: "Deployment Steps",
-    verification: "Verification",
-    quickStart: "Quick Start",
-    interfaceIntro: "Interface Introduction",
-    features: "Features",
-    faq: "FAQ",
-    authMethod: "Authentication",
-    chatApi: "Chat API",
-    roleConfig: "Role Configuration",
-    multimediaApi: "Multimedia API",
-    systemArch: "System Architecture",
-    coreComponents: "Core Components",
-    techStack: "Technology Stack",
-    systemOverview: "System Overview",
-    coreFeatures: "Core Features",
-    techAdvantages: "Technical Advantages"
-  },
-  zh: {
-    home: "首页",
-    docs: "文档",
-    tutorial: "教程",
-    login: "登录",
-    language: "语言",
-    share: "分享",
-    copyLink: "复制链接",
-    shareToWechat: "分享到微信",
-    shareToWeibo: "分享到微博",
-    onThisPage: "本页目录",
-    docCenter: "文档中心",
-    installGuide: "安装指南",
-    userManual: "使用手册",
-    apiReference: "API 参考",
-    techArchitecture: "技术架构",
-    roadmap: "发展路线",
-    overview: "概述",
-    envRequirements: "环境要求",
-    deploySteps: "部署步骤",
-    verification: "验证方法",
-    quickStart: "快速开始",
-    interfaceIntro: "界面介绍",
-    features: "功能模块",
-    faq: "常见问题",
-    authMethod: "认证方式",
-    chatApi: "对话接口",
-    roleConfig: "角色配置接口",
-    multimediaApi: "多媒体接口",
-    systemArch: "系统架构图",
-    coreComponents: "核心组件",
-    techStack: "技术栈",
-    systemOverview: "系统概述",
-    coreFeatures: "核心功能",
-    techAdvantages: "技术优势"
-  }
+// 中文原文内容 - 只需要维护中文版本，其他语言自动翻译
+const chineseContent = {
+  home: "首页",
+  docs: "文档",
+  tutorial: "教程",
+  login: "登录",
+  language: "语言",
+  share: "分享",
+  copyLink: "复制链接",
+  shareToWechat: "分享到微信",
+  shareToWeibo: "分享到微博",
+  onThisPage: "本页目录",
+  docCenter: "文档中心",
+  installGuide: "安装指南",
+  userManual: "使用手册",
+  apiReference: "API 参考",
+  techArchitecture: "技术架构",
+  roadmap: "发展路线",
+  overview: "概述",
+  envRequirements: "环境要求",
+  deploySteps: "部署步骤",
+  verification: "验证方法",
+  quickStart: "快速开始",
+  interfaceIntro: "界面介绍",
+  features: "功能模块",
+  faq: "常见问题",
+  authMethod: "认证方式",
+  chatApi: "对话接口",
+  roleConfig: "角色配置接口",
+  multimediaApi: "多媒体接口",
+  systemArch: "系统架构图",
+  coreComponents: "核心组件",
+  techStack: "技术栈",
+  systemOverview: "系统概述",
+  coreFeatures: "核心功能",
+  techAdvantages: "技术优势"
 };
 
 interface DocsPageProps {
@@ -138,8 +96,11 @@ const DocsPage: React.FC<DocsPageProps> = ({ onNavigate, language, onLanguageCha
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // 获取当前语言的翻译
-  const t = (key: TranslationKeys): string => translations[language][key] || key;
+  // 智能翻译函数 - 根据当前语言自动翻译
+  const t = (key: keyof typeof chineseContent): string => {
+    const chineseText = chineseContent[key];
+    return autoTranslate(chineseText, language as 'zh' | 'en' | 'ja');
+  };
 
   const docSections = [
     {
@@ -247,12 +208,10 @@ const DocsPage: React.FC<DocsPageProps> = ({ onNavigate, language, onLanguageCha
             <section id="systemOverview" className="content-section">
               <h2 className="section-title">{t('systemOverview')}</h2>
               <p className="section-content">
-                EchoSoul AI Platform 是一款多模态AI人格化系统，融合自然语言处理、计算机视觉、语音识别与情感计算技术，
-                构建具有独特个性和情感理解能力的智能交互伙伴，为用户提供更加人性化、个性化的AI体验。
+                {autoTranslate('EchoSoul AI Platform 是一款多模态AI人格化系统，融合自然语言处理、计算机视觉、语音识别与情感计算技术，构建具有独特个性和情感理解能力的智能交互伙伴，为用户提供更加人性化、个性化的AI体验。', language as 'zh' | 'en' | 'ja')}
               </p>
               <p className="section-content">
-                系统采用先进的深度学习架构，支持多种模态的输入输出，能够理解用户的意图、情感和上下文，
-                提供智能化的对话服务和个性化推荐。
+                {autoTranslate('系统采用先进的深度学习架构，支持多种模态的输入输出，能够理解用户的意图、情感和上下文，提供智能化的对话服务和个性化推荐。', language as 'en' | 'ja')}
               </p>
             </section>
 
@@ -260,20 +219,20 @@ const DocsPage: React.FC<DocsPageProps> = ({ onNavigate, language, onLanguageCha
               <h2 className="section-title">{t('coreFeatures')}</h2>
               <div className="feature-list">
                 <div className="feature-item">
-                  <h3>高级自然语言处理</h3>
-                  <p>利用最先进的自然语言处理模型，实现上下文理解、情感分析和智能对话流，并支持多语言。</p>
+                  <h3>{autoTranslate('高级自然语言处理', language as 'en' | 'ja')}</h3>
+                  <p>{autoTranslate('利用最先进的自然语言处理模型，实现上下文理解、情感分析和智能对话流，并支持多语言。', language as 'en' | 'ja')}</p>
                 </div>
                 <div className="feature-item">
-                  <h3>多模态交互</h3>
-                  <p>支持文本、语音、图像和视频输入，实现不同通信渠道的无缝集成和实时处理能力。</p>
+                  <h3>{autoTranslate('多模态交互', language as 'en' | 'ja')}</h3>
+                  <p>{autoTranslate('支持文本、语音、图像和视频输入，实现不同通信渠道的无缝集成和实时处理能力。', language as 'en' | 'ja')}</p>
                 </div>
                 <div className="feature-item">
-                  <h3>主动式交互</h3>
-                  <p>基于用户行为模式、上下文感知和智能调度，实现AI驱动的主动式沟通，提供最佳用户体验和参与度。</p>
+                  <h3>{autoTranslate('主动式交互', language as 'en' | 'ja')}</h3>
+                  <p>{autoTranslate('基于用户行为模式、上下文感知和智能调度，实现AI驱动的主动式沟通，提供最佳用户体验和参与度。', language as 'en' | 'ja')}</p>
                 </div>
                 <div className="feature-item">
-                  <h3>持久化记忆系统</h3>
-                  <p>先进的记忆架构，维护长期上下文、用户偏好和会话历史，实现个性化和持续的跨会话交互。</p>
+                  <h3>{autoTranslate('持久化记忆系统', language as 'en' | 'ja')}</h3>
+                  <p>{autoTranslate('先进的记忆架构，维护长期上下文、用户偏好和会话历史，实现个性化和持续的跨会话交互。', language as 'en' | 'ja')}</p>
                 </div>
               </div>
             </section>
@@ -283,23 +242,23 @@ const DocsPage: React.FC<DocsPageProps> = ({ onNavigate, language, onLanguageCha
               <div className="advantages-grid">
                 <div className="advantage-card">
                   <div className="advantage-icon">🚀</div>
-                  <h3>高性能</h3>
-                  <p>采用分布式架构，支持大规模并发处理，响应速度快，稳定性高。</p>
+                  <h3>{autoTranslate('高性能', language as 'en' | 'ja')}</h3>
+                  <p>{autoTranslate('采用分布式架构，支持大规模并发处理，响应速度快，稳定性高。', language as 'en' | 'ja')}</p>
                 </div>
                 <div className="advantage-card">
                   <div className="advantage-icon">🔒</div>
-                  <h3>安全可靠</h3>
-                  <p>企业级安全防护，数据加密传输，隐私保护机制完善。</p>
+                  <h3>{autoTranslate('安全可靠', language as 'en' | 'ja')}</h3>
+                  <p>{autoTranslate('企业级安全防护，数据加密传输，隐私保护机制完善。', language as 'en' | 'ja')}</p>
                 </div>
                 <div className="advantage-card">
                   <div className="advantage-icon">🔧</div>
-                  <h3>易于集成</h3>
-                  <p>提供丰富的API接口，支持多种开发语言，快速集成到现有系统。</p>
+                  <h3>{autoTranslate('易于集成', language as 'en' | 'ja')}</h3>
+                  <p>{autoTranslate('提供丰富的API接口，支持多种开发语言，快速集成到现有系统。', language as 'en' | 'ja')}</p>
                 </div>
                 <div className="advantage-card">
                   <div className="advantage-icon">📈</div>
-                  <h3>可扩展</h3>
-                  <p>模块化设计，支持水平扩展，可根据业务需求灵活调整。</p>
+                  <h3>{autoTranslate('可扩展', language as 'en' | 'ja')}</h3>
+                  <p>{autoTranslate('模块化设计，支持水平扩展，可根据业务需求灵活调整。', language as 'en' | 'ja')}</p>
                 </div>
               </div>
             </section>

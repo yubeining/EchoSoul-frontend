@@ -1,7 +1,10 @@
 import React, { useState, useEffect } from 'react';
-import './App.css';
-import DocsPage from './DocsPage';
-import Navigation from './Navigation';
+import './styles/App.css';
+import DocsPage from './pages/docs/DocsPage';
+import LoginPage from './pages/auth/LoginPage';
+import RegisterPage from './pages/auth/RegisterPage';
+import DashboardPage from './pages/auth/DashboardPage';
+import Navigation from './components/layout/Navigation';
 
 // 翻译对象类型定义
 type TranslationKeys = 'home' | 'docs' | 'share' | 'copyLink' | 'shareToWechat' | 'shareToWeibo' | 'getStarted' | 'contactSales' | 'liveDemo' | 'heroDescription' | 'innovation' | 'excellence' | 'creativity' | 'advancedNlp' | 'advancedNlpDesc' | 'multimodalInteraction' | 'multimodalInteractionDesc' | 'proactiveEngagement' | 'proactiveEngagementDesc' | 'persistentMemory' | 'persistentMemoryDesc';
@@ -95,6 +98,12 @@ function App() {
     // 更新URL
     if (page === 'docs') {
       window.history.pushState({}, '', '/docs');
+    } else if (page === 'login') {
+      window.history.pushState({}, '', '/login');
+    } else if (page === 'register') {
+      window.history.pushState({}, '', '/register');
+    } else if (page === 'dashboard') {
+      window.history.pushState({}, '', '/dashboard');
     } else {
       window.history.pushState({}, '', '/');
     }
@@ -108,6 +117,12 @@ function App() {
       const path = window.location.pathname;
       if (path === '/docs') {
         setCurrentPage('docs');
+      } else if (path === '/login') {
+        setCurrentPage('login');
+      } else if (path === '/register') {
+        setCurrentPage('register');
+      } else if (path === '/dashboard') {
+        setCurrentPage('dashboard');
       } else {
         setCurrentPage('home');
       }
@@ -136,6 +151,39 @@ function App() {
     );
   }
 
+  // 如果当前是登录页面，渲染登录页面组件
+  if (currentPage === 'login') {
+    return (
+      <LoginPage 
+        onNavigate={handleNavigate}
+        language={language}
+        onLanguageChange={handleLanguageChange}
+      />
+    );
+  }
+
+  // 如果当前是注册页面，渲染注册页面组件
+  if (currentPage === 'register') {
+    return (
+      <RegisterPage 
+        onNavigate={handleNavigate}
+        language={language}
+        onLanguageChange={handleLanguageChange}
+      />
+    );
+  }
+
+  // 如果当前是仪表板页面，渲染仪表板页面组件
+  if (currentPage === 'dashboard') {
+    return (
+      <DashboardPage 
+        onNavigate={handleNavigate}
+        language={language}
+        onLanguageChange={handleLanguageChange}
+      />
+    );
+  }
+
   return (
     <div className="App">
       {/* Navigation - 复用组件 */}
@@ -157,7 +205,7 @@ function App() {
               {t('heroDescription')}
             </p>
             <div className="hero-buttons">
-              <button className="btn-primary">{t('getStarted')}</button>
+              <button className="btn-primary" onClick={() => handleNavigate('login')}>{t('getStarted')}</button>
               <button className="btn-secondary">{t('contactSales')}</button>
                 <button className="btn-secondary btn-trial">
                   <span className="trial-text">{t('liveDemo')}</span>

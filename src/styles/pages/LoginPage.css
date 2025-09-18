@@ -1,0 +1,378 @@
+/* Login Page Styles */
+.login-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  padding-top: 90px; /* 为固定导航栏留出空间 */
+}
+
+.login-container {
+  width: 100%;
+  max-width: 400px;
+}
+
+.login-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  padding: 40px;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #165DFF, #667eea, #764ba2);
+}
+
+.login-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1f2937;
+  text-align: center;
+  margin-bottom: 32px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+.login-form {
+  margin-bottom: 24px;
+}
+
+.input-group {
+  margin-bottom: 20px;
+}
+
+.input-wrapper {
+  position: relative;
+}
+
+.login-input {
+  width: 100%;
+  padding: 16px 20px 16px 50px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 16px;
+  color: #1f2937;
+  background: #f9fafb;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.login-input:focus {
+  outline: none;
+  border-color: #165DFF;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(22, 93, 255, 0.1);
+}
+
+.login-input::placeholder {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+.input-icon {
+  position: absolute;
+  left: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 18px;
+  color: #6b7280;
+  pointer-events: none;
+}
+
+.password-toggle {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  color: #6b7280;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.password-toggle:hover {
+  color: #165DFF;
+  background: rgba(22, 93, 255, 0.1);
+}
+
+
+.login-button {
+  width: 100%;
+  padding: 16px;
+  background: linear-gradient(135deg, #165DFF 0%, #0d47a1 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.login-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.login-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(22, 93, 255, 0.3);
+}
+
+.login-button:hover::before {
+  left: 100%;
+}
+
+.login-button:active {
+  transform: translateY(0);
+}
+
+.third-party-login {
+  margin: 32px 0;
+  text-align: center;
+}
+
+.third-party-title {
+  font-size: 14px;
+  color: #6b7280;
+  margin-bottom: 16px;
+  position: relative;
+}
+
+.third-party-title::before,
+.third-party-title::after {
+  content: '';
+  position: absolute;
+  top: 50%;
+  width: 60px;
+  height: 1px;
+  background: #e5e7eb;
+}
+
+.third-party-title::before {
+  left: 0;
+}
+
+.third-party-title::after {
+  right: 0;
+}
+
+.third-party-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+}
+
+.third-party-btn {
+  width: 48px;
+  height: 48px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  background: white;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.third-party-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+}
+
+.third-party-btn.wechat:hover {
+  border-color: #07c160;
+  background: #f0f9f0;
+}
+
+.third-party-btn.qq:hover {
+  border-color: #12b7f5;
+  background: #f0f9ff;
+}
+
+.third-party-btn.weibo:hover {
+  border-color: #e6162d;
+  background: #fff5f5;
+}
+
+.third-party-icon {
+  font-size: 20px;
+}
+
+.register-link {
+  text-align: center;
+  margin-top: 24px;
+}
+
+.register-text {
+  color: #6b7280;
+  font-size: 14px;
+  margin-right: 8px;
+}
+
+.register-button {
+  background: none;
+  border: none;
+  color: #165DFF;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.register-button:hover {
+  color: #0d47a1;
+  text-decoration: underline;
+}
+
+/* 响应式设计 */
+@media (max-width: 480px) {
+  .login-page {
+    padding: 16px;
+    padding-top: 90px;
+  }
+  
+  .login-card {
+    padding: 24px;
+  }
+  
+  .login-title {
+    font-size: 24px;
+    margin-bottom: 24px;
+  }
+  
+  .login-input {
+    padding: 14px 16px 14px 44px;
+    font-size: 14px;
+  }
+  
+  .input-icon {
+    left: 14px;
+    font-size: 16px;
+  }
+  
+  .password-toggle {
+    right: 14px;
+    font-size: 16px;
+  }
+  
+  .login-button {
+    padding: 14px;
+    font-size: 14px;
+  }
+  
+  
+  .third-party-buttons {
+    gap: 12px;
+  }
+  
+  .third-party-btn {
+    width: 44px;
+    height: 44px;
+  }
+  
+  .third-party-icon {
+    font-size: 18px;
+  }
+}
+
+/* 动画效果 */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.login-card {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+/* 焦点状态优化 */
+.login-input:focus + .input-icon {
+  color: #165DFF;
+}
+
+/* 加载状态 */
+.login-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+}
+
+.login-button:disabled:hover {
+  transform: none;
+  box-shadow: none;
+}
+
+/* Guest Login Button */
+.guest-login-section {
+  margin: 20px 0;
+  text-align: center;
+}
+
+.guest-login-button {
+  width: 100%;
+  padding: 16px;
+  background: linear-gradient(135deg, #6b7280 0%, #4b5563 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.guest-login-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.guest-login-button:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(107, 114, 128, 0.3);
+}
+
+.guest-login-button:hover::before {
+  left: 100%;
+}
+
+.guest-login-button:active {
+  transform: translateY(0);
+}

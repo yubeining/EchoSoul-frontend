@@ -1,0 +1,375 @@
+/* Register Page Styles */
+.register-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  padding-top: 90px; /* 为固定导航栏留出空间 */
+}
+
+.register-container {
+  width: 100%;
+  max-width: 400px;
+}
+
+.register-card {
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.1);
+  padding: 40px;
+  position: relative;
+  overflow: hidden;
+}
+
+.register-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #165DFF, #667eea, #764ba2);
+}
+
+/* Register Header */
+.register-header {
+  text-align: center;
+  margin-bottom: 32px;
+}
+
+.register-logo {
+  width: 60px;
+  height: 60px;
+  background: linear-gradient(135deg, #165DFF 0%, #0d47a1 100%);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin: 0 auto 20px;
+}
+
+.logo-icon {
+  color: white;
+  font-size: 24px;
+  font-weight: 700;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+.register-title {
+  font-size: 28px;
+  font-weight: 700;
+  color: #1f2937;
+  margin-bottom: 8px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', sans-serif;
+}
+
+.register-subtitle {
+  font-size: 14px;
+  color: #6b7280;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Form Styles */
+.register-form {
+  margin-bottom: 24px;
+}
+
+.input-group {
+  margin-bottom: 20px;
+}
+
+.input-wrapper {
+  position: relative;
+}
+
+.register-input {
+  width: 100%;
+  padding: 16px 20px;
+  border: 2px solid #e5e7eb;
+  border-radius: 12px;
+  font-size: 16px;
+  color: #1f2937;
+  background: #f9fafb;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+}
+
+.register-input:focus {
+  outline: none;
+  border-color: #165DFF;
+  background: white;
+  box-shadow: 0 0 0 3px rgba(22, 93, 255, 0.1);
+}
+
+.register-input::placeholder {
+  color: #9ca3af;
+  font-weight: 400;
+}
+
+
+
+/* Password Toggle */
+.password-toggle {
+  position: absolute;
+  right: 16px;
+  top: 50%;
+  transform: translateY(-50%);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 18px;
+  color: #6b7280;
+  padding: 4px;
+  border-radius: 4px;
+  transition: all 0.2s ease;
+}
+
+.password-toggle:hover {
+  color: #165DFF;
+  background: rgba(22, 93, 255, 0.1);
+}
+
+/* Password Strength Indicator */
+.password-strength {
+  margin-top: 12px;
+}
+
+.strength-label {
+  font-size: 12px;
+  color: #6b7280;
+  margin-bottom: 8px;
+}
+
+.strength-bar {
+  display: flex;
+  gap: 4px;
+  margin-bottom: 4px;
+}
+
+.strength-segment {
+  height: 4px;
+  flex: 1;
+  border-radius: 2px;
+  transition: all 0.3s ease;
+}
+
+.strength-segment.active {
+  transform: scaleY(1.2);
+}
+
+.strength-text {
+  font-size: 12px;
+  color: #6b7280;
+  text-align: right;
+}
+
+/* Agreement Section */
+.agreement-section {
+  margin: 24px 0;
+}
+
+.agreement-checkbox {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1.5;
+}
+
+.agreement-checkbox input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  accent-color: #165DFF;
+  cursor: pointer;
+  margin-top: 2px;
+}
+
+.agreement-text {
+  color: #374151;
+  flex: 1;
+}
+
+.agreement-link {
+  background: none;
+  border: none;
+  color: #165DFF;
+  cursor: pointer;
+  text-decoration: underline;
+  font-size: inherit;
+  padding: 0;
+  margin: 0 4px;
+}
+
+.agreement-link:hover {
+  color: #0d47a1;
+}
+
+/* Register Button */
+.register-button {
+  width: 100%;
+  padding: 16px;
+  background: linear-gradient(135deg, #165DFF 0%, #0d47a1 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  position: relative;
+  overflow: hidden;
+}
+
+.register-button::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: -100%;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+  transition: left 0.5s ease;
+}
+
+.register-button:hover:not(:disabled) {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(22, 93, 255, 0.3);
+}
+
+.register-button:hover:not(:disabled)::before {
+  left: 100%;
+}
+
+.register-button:active {
+  transform: translateY(0);
+}
+
+.register-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none;
+  box-shadow: none;
+}
+
+.register-button:disabled::before {
+  display: none;
+}
+
+/* Login Link */
+.login-link {
+  text-align: center;
+  margin-top: 24px;
+}
+
+.login-text {
+  color: #6b7280;
+  font-size: 14px;
+  margin-right: 8px;
+}
+
+.login-button {
+  background: none;
+  border: none;
+  color: #165DFF;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.login-button:hover {
+  color: #0d47a1;
+  text-decoration: underline;
+}
+
+/* Responsive Design */
+@media (max-width: 480px) {
+  .register-page {
+    padding: 16px;
+    padding-top: 90px;
+  }
+  
+  .register-card {
+    padding: 24px;
+  }
+  
+  .register-logo {
+    width: 50px;
+    height: 50px;
+  }
+  
+  .logo-icon {
+    font-size: 20px;
+  }
+  
+  .register-title {
+    font-size: 24px;
+    margin-bottom: 6px;
+  }
+  
+  .register-subtitle {
+    font-size: 13px;
+  }
+  
+  .register-input {
+    padding: 14px 16px;
+    font-size: 14px;
+  }
+  
+  .password-toggle {
+    right: 14px;
+    font-size: 16px;
+  }
+  
+  
+  .register-button {
+    padding: 14px;
+    font-size: 14px;
+  }
+  
+  .agreement-checkbox {
+    font-size: 13px;
+  }
+  
+  .agreement-checkbox input[type="checkbox"] {
+    width: 16px;
+    height: 16px;
+  }
+}
+
+/* Animation Effects */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(30px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.register-card {
+  animation: fadeInUp 0.6s ease-out;
+}
+
+
+
+/* Password Strength Animation */
+.strength-segment.active {
+  animation: strengthGrow 0.3s ease-out;
+}
+
+@keyframes strengthGrow {
+  from {
+    transform: scaleY(0);
+  }
+  to {
+    transform: scaleY(1.2);
+  }
+}
