@@ -1,6 +1,7 @@
 {
-  "name": "untitled5",
-  "version": "0.1.0",
+  "name": "echosoul-chat-platform",
+  "version": "1.0.0",
+  "description": "EchoSoul AI Platform - 智能聊天平台",
   "private": true,
   "dependencies": {
     "@testing-library/jest-dom": "^5.17.0",
@@ -18,6 +19,12 @@
   },
   "scripts": {
     "start": "react-scripts start",
+    "start:dev": "./entrypoint.sh development",
+    "start:prod": "./entrypoint.sh production",
+    "start:stable": "./entrypoint.sh development",
+    "stop": "./scripts/stop-server.sh",
+    "restart": "./scripts/restart-server.sh",
+    "status": "./scripts/status-server.sh",
     "build": "react-scripts build",
     "test": "react-scripts test",
     "eject": "react-scripts eject"

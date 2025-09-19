@@ -1,5 +1,5 @@
 // 路由管理工具
-export type Route = 'home' | 'docs' | 'login' | 'register' | 'dashboard';
+export type Route = 'home' | 'docs' | 'login' | 'register' | 'dashboard' | 'chat' | 'api-test';
 
 // 路由配置
 export const routes: Record<Route, string> = {
@@ -7,7 +7,9 @@ export const routes: Record<Route, string> = {
   docs: '/docs',
   login: '/login',
   register: '/register',
-  dashboard: '/dashboard'
+  dashboard: '/dashboard',
+  chat: '/chat',
+  'api-test': '/api-test'
 };
 
 // 路径到路由的映射
@@ -16,7 +18,9 @@ export const pathToRoute: Record<string, Route> = {
   '/docs': 'docs',
   '/login': 'login',
   '/register': 'register',
-  '/dashboard': 'dashboard'
+  '/dashboard': 'dashboard',
+  '/chat': 'chat',
+  '/api-test': 'api-test'
 };
 
 /**

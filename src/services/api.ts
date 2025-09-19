@@ -328,6 +328,149 @@ export const userApi = {
   }
 };
 
+// 聊天相关接口类型定义
+export interface Conversation {
+  conversation_id: string;
+  user1_id: number;
+  user2_id: number;
+  conversation_name: string;
+  last_message_id: number | null;
+  last_message_time: string | null;
+  status: number;
+  create_time: string;
+  update_time: string;
+}
+
+export interface ChatMessage {
+  message_id: string;
+  conversation_id: string;
+  sender_id: number;
+  receiver_id: number;
+  content: string;
+  message_type: 'text' | 'image' | 'voice' | 'video' | 'file' | 'emoji';
+  file_url: string | null;
+  file_name: string | null;
+  file_size: number | null;
+  is_deleted: number;
+  reply_to_message_id: string | null;
+  create_time: string;
+  update_time: string;
+}
+
+// 聊天API
+export const chatApi = {
+  // 获取或创建会话
+  async getOrCreateConversation(otherUserId: number): Promise<ApiResponse<Conversation>> {
+    try {
+      console.log('发送会话创建请求，参数:', { other_user_id: otherUserId });
+      
+      const response = await apiClient.post('/api/chat/conversations/get-or-create', {
+        target_user_id: otherUserId
+      }) as ApiResponse<Conversation>;
+      
+      console.log('会话创建响应:', response);
+      return response;
+    } catch (error: any) {
+      console.error('获取或创建会话失败:', error);
+      
+      // 提供更详细的错误信息
+      if (error.status) {
+        if (error.status === 401) {
+          throw new Error('401: 登录已过期，请重新登录');
+        } else if (error.status === 422) {
+          throw new Error('422: 请求参数错误，请检查用户ID');
+        } else if (error.status === 403) {
+          throw new Error('403: 没有权限创建会话');
+        } else if (error.status === 404) {
+          throw new Error('404: 目标用户不存在');
+        } else {
+          throw new Error(`${error.status}: ${error.message || '服务器错误'}`);
+        }
+      } else {
+        throw new Error(error.message || '网络错误，请检查连接');
+      }
+    }
+  },
+
+  // 获取用户会话列表
+  async getConversations(): Promise<ApiResponse<Conversation[]>> {
+    try {
+      const response = await apiClient.get('/api/chat/conversations') as ApiResponse<Conversation[]>;
+      console.log('✅ 获取会话列表成功:', response);
+      
+      // 检查响应状态码
+      if (response.code === 200 || response.code === 1) {
+        return response;
+      } else {
+        throw new Error(response.msg || '获取会话列表失败');
+      }
+    } catch (error: any) {
+      console.error('❌ 获取会话列表失败:', error);
+      throw new Error(error.message || '获取会话列表失败');
+    }
+  },
+
+  // 根据会话ID获取会话详情
+  async getConversationById(conversationId: string): Promise<ApiResponse<Conversation>> {
+    try {
+      const response = await apiClient.get(`/api/chat/conversations/${conversationId}`) as ApiResponse<Conversation>;
+      return response;
+    } catch (error: any) {
+      console.error('获取会话详情失败:', error);
+      throw new Error(error.message || '获取会话详情失败');
+    }
+  },
+
+  // 发送消息
+  async sendMessage(
+    conversationId: string,
+    content: string,
+    messageType: 'text' | 'image' | 'voice' | 'video' | 'file' | 'emoji' = 'text',
+    fileUrl?: string,
+    fileName?: string,
+    fileSize?: number,
+    replyToMessageId?: string
+  ): Promise<ApiResponse<ChatMessage>> {
+    try {
+      const response = await apiClient.post('/api/chat/messages', {
+        conversation_id: conversationId,
+        content: content,
+        message_type: messageType,
+        file_url: fileUrl || null,
+        file_name: fileName || null,
+        file_size: fileSize || null,
+        reply_to_message_id: replyToMessageId || null
+      }) as ApiResponse<ChatMessage>;
+      return response;
+    } catch (error: any) {
+      console.error('发送消息失败:', error);
+      throw new Error(error.message || '发送消息失败');
+    }
+  },
+
+  // 获取会话消息列表
+  async getMessages(conversationId: string, page: number = 1, limit: number = 20): Promise<ApiResponse<ChatMessage[]>> {
+    try {
+      const params = new URLSearchParams({
+        page: page.toString(),
+        limit: limit.toString()
+      });
+      const response = await apiClient.get(`/api/chat/conversations/${conversationId}/messages?${params.toString()}`) as ApiResponse<ChatMessage[]>;
+      console.log('getMessages 响应:', response);
+      
+      // 检查响应状态码
+      if (response.code === 200 || response.code === 1) {
+        return response;
+      } else {
+        throw new Error(response.msg || '获取消息列表失败');
+      }
+    } catch (error: any) {
+      console.error('获取消息列表失败:', error);
+      throw new Error(error.message || '获取消息列表失败');
+    }
+  }
+};
+
 // Token管理工具
 export const tokenManager = {
   // 保存Token

@@ -1,35 +1,34 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import '../../styles/components/ChatHistory.css';
-
-export interface ChatHistoryItem {
-  id: string;
-  user: {
-    id: string;
-    username: string;
-    nickname: string;
-    avatar?: string;
-    status: 'online' | 'offline';
-  };
-  lastMessage: {
-    content: string;
-    timestamp: string;
-    senderId: string;
-  };
-  unreadCount: number;
-  isPinned: boolean;
-}
+import { useChat, ChatHistoryItem } from '../../hooks/useChat';
 
 interface ChatHistoryProps {
-  chatList: ChatHistoryItem[];
   onChatClick: (chatId: string) => void;
   onNewChat: () => void;
 }
 
 const ChatHistory: React.FC<ChatHistoryProps> = ({
-  chatList,
   onChatClick,
   onNewChat
 }) => {
+  const { getChatHistory, loading, error, conversations } = useChat();
+  const [chatList, setChatList] = useState<ChatHistoryItem[]>([]);
+
+  // 当会话列表更新时，获取聊天历史
+  useEffect(() => {
+    const updateChatHistory = async () => {
+      if (conversations.length > 0) {
+        try {
+          const history = await getChatHistory();
+          setChatList(history);
+        } catch (err) {
+          console.error('获取聊天历史失败:', err);
+        }
+      }
+    };
+
+    updateChatHistory();
+  }, [conversations, getChatHistory]);
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
     const now = new Date();
@@ -69,7 +68,18 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
       </div>
 
       <div className="chat-history-list">
-        {chatList.length === 0 ? (
+        {loading ? (
+          <div className="loading-chat-list">
+            <div className="loading-spinner"></div>
+            <div className="loading-text">加载聊天记录中...</div>
+          </div>
+        ) : error ? (
+          <div className="error-chat-list">
+            <div className="error-icon">⚠️</div>
+            <div className="error-text">加载失败</div>
+            <div className="error-hint">{error}</div>
+          </div>
+        ) : chatList.length === 0 ? (
           <div className="empty-chat-list">
             <div className="empty-icon">💬</div>
             <div className="empty-text">暂无聊天记录</div>
@@ -120,17 +130,6 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
         )}
       </div>
 
-      {/* 搜索框 */}
-      <div className="chat-search">
-        <div className="search-input-container">
-          <span className="search-icon">🔍</span>
-          <input
-            type="text"
-            className="search-input"
-            placeholder="搜索聊天记录..."
-          />
-        </div>
-      </div>
     </div>
   );
 };

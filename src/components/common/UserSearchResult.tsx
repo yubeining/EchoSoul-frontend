@@ -5,26 +5,14 @@ import '../../styles/components/UserSearchResult.css';
 interface UserSearchResultProps {
   user: UserSearchResultType;
   onStartChat?: (user: UserSearchResultType) => void;
-  onFollow?: (user: UserSearchResultType) => void;
-  onViewProfile?: (user: UserSearchResultType) => void;
 }
 
 const UserSearchResult: React.FC<UserSearchResultProps> = ({
   user,
-  onStartChat,
-  onFollow,
-  onViewProfile
+  onStartChat
 }) => {
   const handleStartChat = () => {
     onStartChat?.(user);
-  };
-
-  const handleFollow = () => {
-    onFollow?.(user);
-  };
-
-  const handleViewProfile = () => {
-    onViewProfile?.(user);
   };
 
   return (
@@ -74,20 +62,6 @@ const UserSearchResult: React.FC<UserSearchResultProps> = ({
           title="发起聊天"
         >
           💬 聊天
-        </button>
-        <button 
-          className="action-btn secondary"
-          onClick={handleFollow}
-          title="关注用户"
-        >
-          ➕ 关注
-        </button>
-        <button 
-          className="action-btn tertiary"
-          onClick={handleViewProfile}
-          title="查看资料"
-        >
-          👤 资料
         </button>
       </div>
     </div>

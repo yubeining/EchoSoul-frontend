@@ -6,7 +6,7 @@ import UserSearchResult from '../../components/common/UserSearchResult';
 import ChatHistory from '../../components/common/ChatHistory';
 import { useAuth } from '../../contexts/AuthContext';
 import { useUserSearch, UserSearchResult as UserSearchResultType } from '../../hooks/useUserSearch';
-import { mockChatHistory } from '../../data/mockChatData';
+import { useChat } from '../../hooks/useChat';
 
 interface DashboardPageProps {
   onNavigate: (page: string) => void;
@@ -22,10 +22,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
   const [activeMenu, setActiveMenu] = useState('home');
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   
-  // 聊天相关状态
-  const [chatHistory] = useState(mockChatHistory);
-  
   const { user, logout } = useAuth();
+  const { getOrCreateConversation } = useChat();
 
   // 从URL参数中读取menu参数
   useEffect(() => {
@@ -58,27 +56,74 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
   };
 
   // 处理用户操作
-  const handleStartChat = (targetUser: UserSearchResultType) => {
-    // 跳转到聊天页面，传递用户ID参数
-    const chatUrl = `/chat?userId=${targetUser.uid}`;
-    window.history.pushState({}, '', chatUrl);
-    onNavigate('chat');
+  const handleStartChat = async (targetUser: UserSearchResultType) => {
+    if (!user) {
+      alert('请先登录');
+      return;
+    }
+    
+    try {
+      console.log('开始创建会话，目标用户ID:', targetUser.id, '类型:', typeof targetUser.id);
+      
+      // 获取或创建会话
+      const conversation = await getOrCreateConversation(targetUser.id);
+      console.log('getOrCreateConversation 返回结果:', conversation);
+      if (conversation) {
+        console.log('会话创建成功:', conversation);
+        // 跳转到聊天页面，传递会话ID参数
+        const chatUrl = `/chat?conversationId=${conversation.conversation_id}`;
+        console.log('准备跳转到:', chatUrl);
+        
+        // 先设置URL，再调用导航
+        window.history.pushState({}, '', chatUrl);
+        console.log('URL已设置，当前URL:', window.location.href);
+        
+        // 触发自定义路由变化事件
+        window.dispatchEvent(new CustomEvent('routechange'));
+        console.log('自定义路由变化事件已触发');
+        
+        // 调用导航函数
+        onNavigate('chat');
+        console.log('onNavigate("chat") 已调用');
+        
+        // 强制刷新页面状态
+        setTimeout(() => {
+          console.log('延迟检查URL:', window.location.href);
+          console.log('延迟检查页面状态');
+        }, 100);
+      } else {
+        console.error('会话创建失败，conversation为null');
+        alert('创建会话失败，请重试');
+      }
+    } catch (error: any) {
+      console.error('创建会话失败:', error);
+      
+      // 提供更详细的错误信息
+      let errorMessage = '创建会话失败，请稍后重试';
+      
+      if (error.message) {
+        if (error.message.includes('401')) {
+          errorMessage = '登录已过期，请重新登录';
+        } else if (error.message.includes('422')) {
+          errorMessage = '请求参数错误，请检查用户信息';
+        } else if (error.message.includes('403')) {
+          errorMessage = '没有权限创建会话';
+        } else if (error.message.includes('404')) {
+          errorMessage = '目标用户不存在';
+        } else {
+          errorMessage = `创建会话失败: ${error.message}`;
+        }
+      }
+      
+      alert(errorMessage);
+    }
   };
 
-  const handleFollow = (targetUser: UserSearchResultType) => {
-    // TODO: 实现关注功能
-    alert(`已关注 ${targetUser.nickname}`);
-  };
-
-  const handleViewProfile = (targetUser: UserSearchResultType) => {
-    // TODO: 实现查看资料功能
-    alert(`查看 ${targetUser.nickname} 的资料`);
-  };
 
   // 聊天相关处理函数
-  const handleChatClick = (chatId: string) => {
-    // 跳转到聊天页面，传递用户ID参数
-    const chatUrl = `/chat?userId=${chatId}`;
+  const handleChatClick = (conversationId: string) => {
+    // 跳转到聊天页面，传递会话ID参数
+    const chatUrl = `/chat?conversationId=${conversationId}`;
     window.history.pushState({}, '', chatUrl);
     onNavigate('chat');
   };
@@ -305,7 +350,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
           <div className="dashboard-content">
             <h1 className="dashboard-title">聊天记录</h1>
             <ChatHistory
-              chatList={chatHistory}
               onChatClick={handleChatClick}
               onNewChat={handleNewChat}
             />
@@ -373,8 +417,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                       key={user.id}
                       user={user}
                       onStartChat={handleStartChat}
-                      onFollow={handleFollow}
-                      onViewProfile={handleViewProfile}
                     />
                   ))}
                 </div>
@@ -407,14 +449,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                   <div className="feature-item">
                     <span className="feature-icon">💬</span>
                     <span>发起聊天</span>
-                  </div>
-                  <div className="feature-item">
-                    <span className="feature-icon">➕</span>
-                    <span>关注用户</span>
-                  </div>
-                  <div className="feature-item">
-                    <span className="feature-icon">👤</span>
-                    <span>查看资料</span>
                   </div>
                 </div>
               </div>
