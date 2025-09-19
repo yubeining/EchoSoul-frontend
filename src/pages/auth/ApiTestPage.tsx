@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { authApi, apiTester } from '../../services/api';
+import React, { useState, useEffect, useCallback } from 'react';
+import { authApi, apiTester, userApi } from '../../services/api';
 import { getEnvironmentInfo } from '../../utils/environment';
 
 const ApiTestPage: React.FC = () => {
@@ -16,7 +16,7 @@ const ApiTestPage: React.FC = () => {
   };
 
   // 测试所有API连接
-  const testConnections = async () => {
+  const testConnections = useCallback(async () => {
     setIsLoading(true);
     try {
       const results = await apiTester.testAllConnections();
@@ -27,7 +27,7 @@ const ApiTestPage: React.FC = () => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, []);
 
   // 组件加载时自动测试连接
   useEffect(() => {
@@ -108,6 +108,19 @@ const ApiTestPage: React.FC = () => {
       addResult('第三方登录', result);
     } catch (error) {
       addResult('第三方登录', { error: error instanceof Error ? error.message : String(error) });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // 测试用户搜索
+  const testUserSearch = async () => {
+    setIsLoading(true);
+    try {
+      const result = await userApi.searchUsers('admin', 1, 10);
+      addResult('用户搜索', result);
+    } catch (error) {
+      addResult('用户搜索', { error: error instanceof Error ? error.message : String(error) });
     } finally {
       setIsLoading(false);
     }
@@ -210,6 +223,13 @@ const ApiTestPage: React.FC = () => {
             第三方登录
           </button>
           <button 
+            onClick={testUserSearch} 
+            disabled={isLoading}
+            style={{ padding: '10px 20px', backgroundColor: '#28a745', color: 'white', border: 'none', borderRadius: '4px' }}
+          >
+            用户搜索
+          </button>
+          <button 
             onClick={clearResults} 
             style={{ padding: '10px 20px', backgroundColor: '#6c757d', color: 'white', border: 'none', borderRadius: '4px' }}
           >
@@ -278,6 +298,7 @@ const ApiTestPage: React.FC = () => {
             <li>用户信息: GET /api/auth/user/info</li>
             <li>登出: POST /api/auth/logout</li>
             <li>第三方登录: POST /api/auth/oauth/login</li>
+            <li>用户搜索: GET /api/users/search</li>
           </ul>
         </div>
       </div>

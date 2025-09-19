@@ -1,7 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import '../../styles/pages/DashboardPage.css';
 import Navigation from '../../components/layout/Navigation';
+import ChangePasswordModal from '../../components/common/ChangePasswordModal';
+import UserSearchResult from '../../components/common/UserSearchResult';
+import ChatHistory from '../../components/common/ChatHistory';
 import { useAuth } from '../../contexts/AuthContext';
+import { useUserSearch, UserSearchResult as UserSearchResultType } from '../../hooks/useUserSearch';
+import { mockChatHistory } from '../../data/mockChatData';
 
 interface DashboardPageProps {
   onNavigate: (page: string) => void;
@@ -15,10 +20,72 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
   onLanguageChange 
 }) => {
   const [activeMenu, setActiveMenu] = useState('home');
+  const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
+  
+  // 聊天相关状态
+  const [chatHistory] = useState(mockChatHistory);
+  
   const { user, logout } = useAuth();
+
+  // 从URL参数中读取menu参数
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const menu = urlParams.get('menu');
+    if (menu && ['home', 'messages', 'chat', 'profile', 'findUsers'].includes(menu)) {
+      setActiveMenu(menu);
+    }
+  }, []);
+  
+  // 使用用户搜索Hook
+  const {
+    query: searchQuery,
+    setQuery: setSearchQuery,
+    results: searchResults,
+    isSearching,
+    error: searchError,
+    clearResults
+  } = useUserSearch({
+    debounceMs: 300,
+    minQueryLength: 2
+  });
 
   const handleMenuClick = (menu: string) => {
     setActiveMenu(menu);
+    // 切换到查找用户页面时清空搜索结果
+    if (menu === 'findUsers') {
+      clearResults();
+    }
+  };
+
+  // 处理用户操作
+  const handleStartChat = (targetUser: UserSearchResultType) => {
+    // 跳转到聊天页面，传递用户ID参数
+    const chatUrl = `/chat?userId=${targetUser.uid}`;
+    window.history.pushState({}, '', chatUrl);
+    onNavigate('chat');
+  };
+
+  const handleFollow = (targetUser: UserSearchResultType) => {
+    // TODO: 实现关注功能
+    alert(`已关注 ${targetUser.nickname}`);
+  };
+
+  const handleViewProfile = (targetUser: UserSearchResultType) => {
+    // TODO: 实现查看资料功能
+    alert(`查看 ${targetUser.nickname} 的资料`);
+  };
+
+  // 聊天相关处理函数
+  const handleChatClick = (chatId: string) => {
+    // 跳转到聊天页面，传递用户ID参数
+    const chatUrl = `/chat?userId=${chatId}`;
+    window.history.pushState({}, '', chatUrl);
+    onNavigate('chat');
+  };
+
+  const handleNewChat = () => {
+    // 切换到用户搜索页面
+    setActiveMenu('findUsers');
   };
 
   // 翻译文本
@@ -27,7 +94,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
       title: 'EchoSoul AI Platform 控制台',
       home: '首页',
       messages: '消息',
+      chat: '聊天',
       profile: '我的',
+      findUsers: '查找用户',
       welcome: '欢迎使用 EchoSoul AI Platform',
       overview: '系统概述',
       overviewContent: 'EchoSoul AI Platform 是一个多模态AI人格化系统，融合自然语言处理、计算机视觉、语音识别与情感计算技术，构建具有独特个性和情感理解能力的智能交互伙伴，为用户提供更加人性化、个性化的AI体验。系统采用先进的深度学习架构，支持多种输入输出模态，能够理解用户意图、情感和上下文，提供智能对话服务和个性化推荐。',
@@ -40,13 +109,20 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
       proactiveEngagementDesc: '基于用户行为模式、上下文感知和智能调度，实现AI驱动的主动式沟通，提供最佳用户体验和参与度。',
       recentActivity: '最近活动',
       systemStatus: '系统状态',
-      quickActions: '快速操作'
+      quickActions: '快速操作',
+      searchUsers: '用户搜索',
+      searchPlaceholder: '输入用户名或邮箱进行搜索...',
+      searchButton: '搜索',
+      noResults: '未找到匹配的用户',
+      userList: '用户列表'
     },
     en: {
       title: 'EchoSoul AI Platform Dashboard',
       home: 'Home',
       messages: 'Messages',
+      chat: 'Chat',
       profile: 'Profile',
+      findUsers: 'Find Users',
       welcome: 'Welcome to EchoSoul AI Platform',
       overview: 'System Overview',
       overviewContent: 'EchoSoul AI Platform is a multimodal AI personalization system that integrates natural language processing, computer vision, speech recognition, and emotional computing technologies to build intelligent interactive partners with unique personalities and emotional understanding capabilities, providing users with a more humanized and personalized AI experience. The system uses advanced deep learning architecture, supports various input/output modalities, understands user intent, emotion, and context, and provides intelligent dialogue services and personalized recommendations.',
@@ -59,13 +135,20 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
       proactiveEngagementDesc: 'AI-driven proactive communication based on user behavior patterns, contextual awareness, and intelligent scheduling for optimal user experience and engagement.',
       recentActivity: 'Recent Activity',
       systemStatus: 'System Status',
-      quickActions: 'Quick Actions'
+      quickActions: 'Quick Actions',
+      searchUsers: 'User Search',
+      searchPlaceholder: 'Enter username or email to search...',
+      searchButton: 'Search',
+      noResults: 'No matching users found',
+      userList: 'User List'
     },
     ja: {
       title: 'EchoSoul AI Platform ダッシュボード',
       home: 'ホーム',
       messages: 'メッセージ',
+      chat: 'チャット',
       profile: 'プロフィール',
+      findUsers: 'ユーザー検索',
       welcome: 'EchoSoul AI Platform へようこそ',
       overview: 'システム概要',
       overviewContent: 'EchoSoul AI Platform は、自然言語処理、コンピュータビジョン、音声認識、感情計算技術を統合し、独特な個性と感情理解能力を持つ知的インタラクティブパートナーを構築し、ユーザーにより人間的で個性的なAI体験を提供するマルチモーダルAI人格化システムです。システムは先進的な深層学習アーキテクチャを使用し、様々な入出力モダリティをサポートし、ユーザーの意図、感情、文脈を理解し、知的対話サービスと個性化された推奨を提供します。',
@@ -78,7 +161,12 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
       proactiveEngagementDesc: 'ユーザーの行動パターン、文脈認識、知的スケジューリングに基づくAI駆動の積極的コミュニケーションにより、最適なユーザー体験とエンゲージメントを提供します。',
       recentActivity: '最近の活動',
       systemStatus: 'システムステータス',
-      quickActions: 'クイックアクション'
+      quickActions: 'クイックアクション',
+      searchUsers: 'ユーザー検索',
+      searchPlaceholder: 'ユーザー名またはメールアドレスを入力して検索...',
+      searchButton: '検索',
+      noResults: '一致するユーザーが見つかりません',
+      userList: 'ユーザーリスト'
     }
   };
 
@@ -193,7 +281,12 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
               </div>
               <div className="profile-actions">
                 <button className="profile-action-btn">编辑资料</button>
-                <button className="profile-action-btn">修改密码</button>
+                <button 
+                  className="profile-action-btn"
+                  onClick={() => setShowChangePasswordModal(true)}
+                >
+                  修改密码
+                </button>
                 <button 
                   className="profile-action-btn"
                   onClick={async () => {
@@ -205,6 +298,127 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                 </button>
               </div>
             </div>
+          </div>
+        );
+      case 'chat':
+        return (
+          <div className="dashboard-content">
+            <h1 className="dashboard-title">聊天记录</h1>
+            <ChatHistory
+              chatList={chatHistory}
+              onChatClick={handleChatClick}
+              onNewChat={handleNewChat}
+            />
+          </div>
+        );
+      case 'findUsers':
+        return (
+          <div className="dashboard-content">
+            <h1 className="dashboard-title">{t.searchUsers}</h1>
+            
+            
+            <div className="search-section">
+              <div className="search-form">
+                <input
+                  type="text"
+                  className="search-input"
+                  placeholder={t.searchPlaceholder}
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                />
+                {searchQuery && (
+                  <button 
+                    className="clear-button"
+                    onClick={clearResults}
+                    title="清空搜索"
+                  >
+                    ✕
+                  </button>
+                )}
+              </div>
+              
+              {/* 搜索提示 */}
+              <div className="search-tips">
+                <p>💡 输入用户名、昵称、邮箱或简介关键词进行搜索</p>
+                <p>🔍 输入2个字符以上开始实时搜索</p>
+              </div>
+            </div>
+
+            {/* 搜索状态 */}
+            {isSearching && (
+              <div className="search-status">
+                <div className="loading-spinner"></div>
+                <span>正在搜索用户...</span>
+              </div>
+            )}
+
+            {/* 搜索错误 */}
+            {searchError && (
+              <div className="search-error">
+                <div className="error-icon">⚠️</div>
+                <div className="error-message">{searchError}</div>
+              </div>
+            )}
+
+            {/* 搜索结果 */}
+            {searchResults.length > 0 && (
+              <div className="search-results">
+                <div className="results-header">
+                  <h2 className="results-title">{t.userList}</h2>
+                  <span className="results-count">找到 {searchResults.length} 个用户</span>
+                </div>
+                <div className="user-results-list">
+                  {searchResults.map((user) => (
+                    <UserSearchResult
+                      key={user.id}
+                      user={user}
+                      onStartChat={handleStartChat}
+                      onFollow={handleFollow}
+                      onViewProfile={handleViewProfile}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* 无搜索结果 */}
+            {searchQuery && searchResults.length === 0 && !isSearching && !searchError && (
+              <div className="no-results">
+                <div className="no-results-icon">🔍</div>
+                <div className="no-results-text">{t.noResults}</div>
+                <div className="no-results-suggestions">
+                  <p>尝试以下建议：</p>
+                  <ul>
+                    <li>检查拼写是否正确</li>
+                    <li>尝试使用更简单的关键词</li>
+                    <li>搜索用户名或昵称</li>
+                  </ul>
+                </div>
+              </div>
+            )}
+
+            {/* 初始状态提示 */}
+            {!searchQuery && (
+              <div className="search-intro">
+                <div className="intro-icon">👥</div>
+                <h3>发现更多用户</h3>
+                <p>在搜索框中输入关键词，实时查找平台上的其他用户</p>
+                <div className="intro-features">
+                  <div className="feature-item">
+                    <span className="feature-icon">💬</span>
+                    <span>发起聊天</span>
+                  </div>
+                  <div className="feature-item">
+                    <span className="feature-icon">➕</span>
+                    <span>关注用户</span>
+                  </div>
+                  <div className="feature-item">
+                    <span className="feature-icon">👤</span>
+                    <span>查看资料</span>
+                  </div>
+                </div>
+              </div>
+            )}
           </div>
         );
       default:
@@ -244,11 +458,25 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
               <span className="menu-text">{t.messages}</span>
             </button>
             <button 
+              className={`menu-item ${activeMenu === 'chat' ? 'active' : ''}`}
+              onClick={() => handleMenuClick('chat')}
+            >
+              <span className="menu-icon">💭</span>
+              <span className="menu-text">{t.chat}</span>
+            </button>
+            <button 
               className={`menu-item ${activeMenu === 'profile' ? 'active' : ''}`}
               onClick={() => handleMenuClick('profile')}
             >
               <span className="menu-icon">👤</span>
               <span className="menu-text">{t.profile}</span>
+            </button>
+            <button 
+              className={`menu-item ${activeMenu === 'findUsers' ? 'active' : ''}`}
+              onClick={() => handleMenuClick('findUsers')}
+            >
+              <span className="menu-icon">🔍</span>
+              <span className="menu-text">{t.findUsers}</span>
             </button>
           </nav>
         </div>
@@ -258,6 +486,16 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
           {renderContent()}
         </div>
       </div>
+
+      {/* 修改密码弹窗 */}
+      <ChangePasswordModal
+        isOpen={showChangePasswordModal}
+        onClose={() => setShowChangePasswordModal(false)}
+        onSuccess={() => {
+          // 密码修改成功后的回调
+          console.log('密码修改成功');
+        }}
+      />
     </div>
   );
 };

@@ -7,7 +7,7 @@ const getApiBaseUrls = () => {
   if (hostname === 'pcbzodaitkpj.sealosbja.site') {
     return [
       'https://glbbvnrguhix.sealosbja.site',  // 测试环境后端
-      'http://localhost:8080',  // 本地开发备用
+      // 'http://localhost:8080',  // 本地开发备用 - 暂时禁用
     ];
   }
   
@@ -16,14 +16,14 @@ const getApiBaseUrls = () => {
     return [
       'https://rmlqwqpmrpnw.sealosbja.site',  // 线上环境后端
       'https://glbbvnrguhix.sealosbja.site',  // 测试环境备用
-      'http://localhost:8080',  // 本地开发备用
+      // 'http://localhost:8080',  // 本地开发备用 - 暂时禁用
     ];
   }
   
   // 本地开发环境
   return [
     'https://glbbvnrguhix.sealosbja.site',  // 默认使用测试环境
-    'http://localhost:8080',  // 本地开发备用
+    // 'http://localhost:8080',  // 本地开发备用 - 暂时禁用，因为服务不可用
   ];
 };
 
@@ -39,6 +39,7 @@ export interface ApiResponse<T = any> {
 // 用户信息接口
 export interface UserInfo {
   id: number;
+  uid: string;  // 新增：用户唯一标识符，8位字符串
   username: string;
   email: string | null;
   mobile: string | null;
@@ -47,6 +48,35 @@ export interface UserInfo {
   status: number;
   lastLoginTime: string;
   createTime: string;
+}
+
+// 用户搜索结果接口
+export interface UserSearchResult {
+  id: number;
+  uid: string;
+  username: string;
+  nickname: string;
+  email?: string;
+  mobile?: string;
+  avatar?: string;
+  intro?: string;
+  lastActive?: string;
+  createdAt?: string;
+}
+
+// 分页信息接口
+export interface PaginationInfo {
+  currentPage: number;
+  totalPages: number;
+  totalCount: number;
+  hasNext: boolean;
+  hasPrev: boolean;
+}
+
+// 用户搜索响应接口
+export interface UserSearchResponse {
+  users: UserSearchResult[];
+  pagination: PaginationInfo;
 }
 
 // 登录响应接口
@@ -119,6 +149,8 @@ class ApiClient {
       },
     };
 
+    let lastError: any = null;
+
     // 尝试所有可用的API地址
     for (const baseUrl of API_BASE_URLS) {
       try {
@@ -128,22 +160,52 @@ class ApiClient {
         const response = await fetch(url, {
           ...config,
           mode: 'cors', // 启用CORS
+          credentials: 'omit', // 不发送cookies
+          cache: 'no-cache', // 禁用缓存
+          headers: {
+            ...config.headers,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+          }
         });
         
         if (response.ok) {
           const data = await response.json();
-          console.log(`✅ 请求成功: ${url}`);
           return data;
         } else {
-          console.log(`❌ 请求失败: ${url} - ${response.status}`);
+          // 尝试解析错误响应
+          try {
+            const errorData = await response.json();
+            lastError = {
+              message: errorData.msg || errorData.detail || `HTTP ${response.status}`,
+              response: errorData,
+              status: response.status
+            };
+          } catch {
+            lastError = {
+              message: `HTTP ${response.status}`,
+              status: response.status
+            };
+          }
         }
-      } catch (error) {
-        console.log(`❌ 请求错误: ${baseUrl}${endpoint}`, error);
+      } catch (error: any) {
+        
+        // 如果是CORS错误，不要将其作为最终错误
+        if (error.name === 'TypeError' && error.message.includes('CORS')) {
+          console.log(`⚠️ CORS错误，跳过此地址: ${baseUrl}`);
+          continue;
+        }
+        
+        lastError = error;
       }
     }
 
-    // 所有地址都失败
-    throw new Error('所有API服务器都不可用，请检查网络连接');
+    // 所有地址都失败，抛出最后一个错误
+    if (lastError) {
+      throw lastError;
+    } else {
+      throw new Error('所有API服务器都不可用，请检查网络连接');
+    }
   }
 
   // GET请求
@@ -179,7 +241,7 @@ const apiClient = new ApiClient(API_BASE_URLS[0]);
 // 认证相关API
 export const authApi = {
   // 用户注册
-  async register(data: RegisterRequest): Promise<ApiResponse<{ userId: number; username: string; nickname: string }>> {
+  async register(data: RegisterRequest): Promise<ApiResponse<{ userId: number; uid: string; username: string; nickname: string }>> {
     return apiClient.post('/api/auth/register', data);
   },
 
@@ -221,6 +283,52 @@ export const authApi = {
       oauthState,
     });
   },
+};
+
+// 用户搜索API
+export const userApi = {
+  // 搜索用户
+  async searchUsers(keyword: string, page: number = 1, limit: number = 20): Promise<ApiResponse<UserSearchResponse>> {
+    // 验证输入参数
+    if (!keyword || keyword.trim().length < 2) {
+      throw new Error('搜索关键词至少需要2个字符');
+    }
+    
+    if (page < 1) {
+      throw new Error('页码必须大于0');
+    }
+    
+    if (limit < 1 || limit > 100) {
+      throw new Error('每页数量必须在1-100之间');
+    }
+    
+    const params = new URLSearchParams({
+      keyword: keyword.trim(),
+      page: page.toString(),
+      limit: limit.toString()
+    });
+    
+    
+    try {
+      const response = await apiClient.get(`/api/users/search?${params.toString()}`) as ApiResponse<UserSearchResponse>;
+      return response;
+    } catch (error: any) {
+      console.error(`❌ 用户搜索失败:`, error);
+      
+      // 提供更友好的错误信息
+      if (error.message?.includes('CORS')) {
+        throw new Error('网络连接问题，请检查网络设置或联系管理员');
+      } else if (error.status === 503) {
+        throw new Error('服务暂时不可用，请稍后重试');
+      } else if (error.status === 401) {
+        throw new Error('请先登录后再进行搜索');
+      } else if (error.status === 403) {
+        throw new Error('没有权限进行用户搜索');
+      } else {
+        throw new Error(error.message || '搜索失败，请稍后重试');
+      }
+    }
+  }
 };
 
 // Token管理工具

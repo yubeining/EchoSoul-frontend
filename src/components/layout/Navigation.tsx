@@ -1,5 +1,7 @@
 import React, { useState, useRef, useEffect } from 'react';
 import '../../styles/components/Navigation.css';
+import Avatar from '../common/Avatar';
+import { useAuth } from '../../contexts/AuthContext';
 
 type TranslationKeys = 'home' | 'docs' | 'share' | 'copyLink' | 'shareToWechat' | 'shareToWeibo' | 'getStarted' | 'contactSales' | 'liveDemo' | 'heroDescription' | 'innovation' | 'excellence' | 'creativity' | 'advancedNlp' | 'advancedNlpDesc' | 'multimodalInteraction' | 'multimodalInteractionDesc' | 'proactiveEngagement' | 'proactiveEngagementDesc' | 'persistentMemory' | 'persistentMemoryDesc';
 
@@ -94,10 +96,24 @@ const Navigation: React.FC<NavigationProps> = ({
 }) => {
   const [showLanguageMenu, setShowLanguageMenu] = useState(false);
   const languageMenuRef = useRef<HTMLDivElement>(null);
+  const { user, isAuthenticated, logout } = useAuth();
 
   const handleLanguageChange = (newLanguage: string) => {
     onLanguageChange(newLanguage);
     setShowLanguageMenu(false);
+  };
+
+  const handleLogin = () => {
+    onNavigate('login');
+  };
+
+  const handleLogout = async () => {
+    await logout();
+    onNavigate('home');
+  };
+
+  const handleMyProfile = () => {
+    onNavigate('dashboard');
   };
 
   // 点击外部关闭下拉菜单
@@ -174,6 +190,20 @@ const Navigation: React.FC<NavigationProps> = ({
             </svg>
             GitHub
           </button>
+          
+          {/* 用户头像 */}
+          <Avatar 
+            size="medium"
+            src={user?.avatar || undefined}
+            username={user?.username || '用户名'}
+            nickname={user?.nickname}
+            uid={user?.uid}
+            isAuthenticated={isAuthenticated}
+            onLogin={handleLogin}
+            onLogout={handleLogout}
+            onMyProfile={handleMyProfile}
+            className="nav-avatar"
+          />
         </div>
       </div>
     </nav>

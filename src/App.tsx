@@ -4,6 +4,7 @@ import DocsPage from './pages/docs/DocsPage';
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import DashboardPage from './pages/auth/DashboardPage';
+import ChatPage from './pages/auth/ChatPage';
 import ApiTestPage from './pages/auth/ApiTestPage';
 import Navigation from './components/layout/Navigation';
 import { AuthProvider } from './contexts/AuthContext';
@@ -107,6 +108,12 @@ function AppContent() {
       window.history.pushState({}, '', '/register');
     } else if (page === 'dashboard') {
       window.history.pushState({}, '', '/dashboard');
+    } else if (page === 'chat') {
+      // 保持当前的URL参数
+      const currentUrl = window.location.pathname + window.location.search;
+      if (!currentUrl.includes('/chat')) {
+        window.history.pushState({}, '', '/chat');
+      }
     } else if (page === 'api-test') {
       window.history.pushState({}, '', '/api-test');
     } else {
@@ -128,6 +135,8 @@ function AppContent() {
         setCurrentPage('register');
       } else if (path === '/dashboard') {
         setCurrentPage('dashboard');
+      } else if (path === '/chat') {
+        setCurrentPage('chat');
       } else if (path === '/api-test') {
         setCurrentPage('api-test');
       } else {
@@ -191,6 +200,22 @@ function AppContent() {
     );
   }
 
+  // 如果当前是聊天页面，渲染聊天页面组件
+  if (currentPage === 'chat') {
+    // 从URL获取用户ID参数
+    const urlParams = new URLSearchParams(window.location.search);
+    const chatUserId = urlParams.get('userId');
+    
+    return (
+      <ChatPage 
+        onNavigate={handleNavigate}
+        language={language}
+        onLanguageChange={handleLanguageChange}
+        chatUserId={chatUserId || undefined}
+      />
+    );
+  }
+
   // 如果当前是API测试页面，渲染API测试页面组件（仅在测试环境）
   if (currentPage === 'api-test') {
     if (isApiTestAvailable()) {
@@ -239,6 +264,18 @@ function AppContent() {
                     API 测试
                   </button>
                 )}
+                {/* 聊天测试按钮 - 测试聊天功能 */}
+                <button 
+                  className="btn-secondary" 
+                  onClick={() => {
+                    const chatUrl = '/chat?userId=10000001';
+                    window.history.pushState({}, '', chatUrl);
+                    handleNavigate('chat');
+                  }}
+                  style={{ marginTop: '10px', backgroundColor: '#28a745' }}
+                >
+                  测试聊天 (爱丽丝)
+                </button>
             </div>
           </div>
             <div className="hero-visual">
