@@ -8,7 +8,8 @@ import ChatPage from './pages/auth/ChatPage';
 import ApiTestPage from './pages/auth/ApiTestPage';
 import Navigation from './components/layout/Navigation';
 import { AuthProvider } from './contexts/AuthContext';
-import { isApiTestAvailable } from './utils/environment';
+import { TranslationProvider } from './contexts/TranslationContext';
+import { isApiTestAvailable, isChatTestAvailable } from './utils/environment';
 
 // 翻译对象类型定义
 type TranslationKeys = 'home' | 'docs' | 'share' | 'copyLink' | 'shareToWechat' | 'shareToWeibo' | 'getStarted' | 'contactSales' | 'liveDemo' | 'heroDescription' | 'innovation' | 'excellence' | 'creativity' | 'advancedNlp' | 'advancedNlpDesc' | 'multimodalInteraction' | 'multimodalInteractionDesc' | 'proactiveEngagement' | 'proactiveEngagementDesc' | 'persistentMemory' | 'persistentMemoryDesc';
@@ -200,20 +201,26 @@ function AppContent() {
     );
   }
 
-  // 如果当前是聊天页面，渲染聊天页面组件
+  // 如果当前是聊天页面，渲染聊天页面组件（仅在测试环境）
   if (currentPage === 'chat') {
-    // 从URL获取用户ID参数
-    const urlParams = new URLSearchParams(window.location.search);
-    const chatUserId = urlParams.get('userId');
-    
-    return (
-      <ChatPage 
-        onNavigate={handleNavigate}
-        language={language}
-        onLanguageChange={handleLanguageChange}
-        chatUserId={chatUserId || undefined}
-      />
-    );
+    if (isChatTestAvailable()) {
+      // 从URL获取用户ID参数
+      const urlParams = new URLSearchParams(window.location.search);
+      const chatUserId = urlParams.get('userId');
+      
+      return (
+        <ChatPage 
+          onNavigate={handleNavigate}
+          language={language}
+          onLanguageChange={handleLanguageChange}
+          chatUserId={chatUserId || undefined}
+        />
+      );
+    } else {
+      // 线上环境重定向到首页
+      handleNavigate('home');
+      return null;
+    }
   }
 
   // 如果当前是API测试页面，渲染API测试页面组件（仅在测试环境）
@@ -264,18 +271,20 @@ function AppContent() {
                     API 测试
                   </button>
                 )}
-                {/* 聊天测试按钮 - 测试聊天功能 */}
-                <button 
-                  className="btn-secondary" 
-                  onClick={() => {
-                    const chatUrl = '/chat?userId=10000001';
-                    window.history.pushState({}, '', chatUrl);
-                    handleNavigate('chat');
-                  }}
-                  style={{ marginTop: '10px', backgroundColor: '#28a745' }}
-                >
-                  测试聊天 (爱丽丝)
-                </button>
+                {/* 聊天测试按钮 - 仅在测试环境显示 */}
+                {isChatTestAvailable() && (
+                  <button 
+                    className="btn-secondary" 
+                    onClick={() => {
+                      const chatUrl = '/chat?userId=10000001';
+                      window.history.pushState({}, '', chatUrl);
+                      handleNavigate('chat');
+                    }}
+                    style={{ marginTop: '10px', backgroundColor: '#28a745' }}
+                  >
+                    测试聊天 (爱丽丝)
+                  </button>
+                )}
             </div>
           </div>
             <div className="hero-visual">
@@ -333,9 +342,11 @@ function AppContent() {
 
 function App() {
   return (
-    <AuthProvider>
-      <AppContent />
-    </AuthProvider>
+    <TranslationProvider>
+      <AuthProvider>
+        <AppContent />
+      </AuthProvider>
+    </TranslationProvider>
   );
 }
 

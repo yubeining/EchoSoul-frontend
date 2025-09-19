@@ -3,27 +3,24 @@
 const getApiBaseUrls = () => {
   const hostname = window.location.hostname;
   
-  // 测试环境
+  // 调试环境 - 前端：https://pcbzodaitkpj.sealosbja.site
   if (hostname === 'pcbzodaitkpj.sealosbja.site') {
     return [
-      'https://glbbvnrguhix.sealosbja.site',  // 测试环境后端
-      // 'http://localhost:8080',  // 本地开发备用 - 暂时禁用
+      'https://glbbvnrguhix.sealosbja.site',  // 调试环境后端
     ];
   }
   
-  // 线上环境
-  if (hostname === 'jqpiogolcznu.sealosbja.site') {
+  // 线上环境 - 前端：https://cedezmdpgixn.sealosbja.site
+  if (hostname === 'cedezmdpgixn.sealosbja.site') {
     return [
-      'https://rmlqwqpmrpnw.sealosbja.site',  // 线上环境后端
-      'https://glbbvnrguhix.sealosbja.site',  // 测试环境备用
-      // 'http://localhost:8080',  // 本地开发备用 - 暂时禁用
+      'https://ohciuodbxwdp.sealosbja.site',  // 线上环境后端
+      'https://glbbvnrguhix.sealosbja.site',   // 调试环境备用
     ];
   }
   
   // 本地开发环境
   return [
-    'https://glbbvnrguhix.sealosbja.site',  // 默认使用测试环境
-    // 'http://localhost:8080',  // 本地开发备用 - 暂时禁用，因为服务不可用
+    'https://glbbvnrguhix.sealosbja.site',  // 默认使用调试环境
   ];
 };
 

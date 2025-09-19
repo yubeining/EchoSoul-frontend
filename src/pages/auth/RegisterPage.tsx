@@ -100,9 +100,6 @@ const RegisterPage: React.FC<RegisterPageProps> = ({
       <div className="register-container">
         <div className="register-card">
           <div className="register-header">
-            <div className="register-logo">
-              <div className="logo-icon">Z</div>
-            </div>
             <h1 className="register-title">{t('title')}</h1>
             <p className="register-subtitle">{t('subtitle')}</p>
           </div>

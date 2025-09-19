@@ -2,13 +2,25 @@
 
 ## 📋 概述
 
-本文档详细说明了前端应用 `https://pcbzodaitkpj.sealosbja.site` 访问后端服务 `https://glbbvnrguhix.sealosbja.site` 时需要的CORS配置。
+本文档详细说明了前端应用访问后端服务时需要的CORS配置。
+
+### 环境对应关系
+- **调试环境**: 前端 `https://pcbzodaitkpj.sealosbja.site` → 后端 `https://glbbvnrguhix.sealosbja.site`
+- **线上环境**: 前端 `https://cedezmdpgixn.sealosbja.site` → 后端 `https://ohciuodbxwdp.sealosbja.site`
 
 ## 🎯 需要配置的CORS设置
 
 ### 1. 允许的源地址 (Allowed Origins)
+
+#### 调试环境后端 (glbbvnrguhix.sealosbja.site)
 ```
 https://pcbzodaitkpj.sealosbja.site
+http://localhost:3000
+```
+
+#### 线上环境后端 (ohciuodbxwdp.sealosbja.site)
+```
+https://cedezmdpgixn.sealosbja.site
 ```
 
 ### 2. 允许的HTTP方法 (Allowed Methods)
@@ -51,14 +63,36 @@ GET /api/health
 ## 🔧 后端CORS配置示例
 
 ### FastAPI 配置示例
+
+#### 调试环境后端配置
 ```python
 from fastapi.middleware.cors import CORSMiddleware
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://pcbzodaitkpj.sealosbja.site",
+        "https://pcbzodaitkpj.sealosbja.site",  # 调试环境前端
         "http://localhost:3000",  # 本地开发环境
+    ],
+    allow_credentials=True,
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
+    allow_headers=[
+        "Content-Type",
+        "Authorization",
+        "Accept",
+        "X-Requested-With",
+    ],
+)
+```
+
+#### 线上环境后端配置
+```python
+from fastapi.middleware.cors import CORSMiddleware
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://cedezmdpgixn.sealosbja.site",  # 线上环境前端
     ],
     allow_credentials=True,
     allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
@@ -111,6 +145,8 @@ location /api/ {
 ## 🧪 测试验证
 
 ### 使用curl测试CORS配置
+
+#### 调试环境测试
 ```bash
 # 测试预检请求
 curl -X OPTIONS "https://glbbvnrguhix.sealosbja.site/api/users/search" \
@@ -127,15 +163,36 @@ curl -X GET "https://glbbvnrguhix.sealosbja.site/api/users/search?keyword=admin"
   -v
 ```
 
+#### 线上环境测试
+```bash
+# 测试预检请求
+curl -X OPTIONS "https://ohciuodbxwdp.sealosbja.site/api/users/search" \
+  -H "Origin: https://cedezmdpgixn.sealosbja.site" \
+  -H "Access-Control-Request-Method: GET" \
+  -H "Access-Control-Request-Headers: Authorization,Content-Type" \
+  -v
+
+# 测试实际请求
+curl -X GET "https://ohciuodbxwdp.sealosbja.site/api/users/search?keyword=admin" \
+  -H "Origin: https://cedezmdpgixn.sealosbja.site" \
+  -H "Authorization: Bearer YOUR_TOKEN" \
+  -H "Content-Type: application/json" \
+  -v
+```
+
 ## 📝 调试建议
 
-1. **检查后端服务状态**: 确保 `https://glbbvnrguhix.sealosbja.site` 服务正常运行
+1. **检查后端服务状态**: 
+   - 调试环境: 确保 `https://glbbvnrguhix.sealosbja.site` 服务正常运行
+   - 线上环境: 确保 `https://ohciuodbxwdp.sealosbja.site` 服务正常运行
 2. **验证CORS配置**: 使用浏览器开发者工具检查响应头
 3. **测试认证流程**: 确保登录后能正常获取和使用token
 4. **监控网络请求**: 使用前端调试工具监控所有API请求
+5. **环境隔离**: 确保调试环境和线上环境的前后端调用正确对应
 
 ## 🔄 更新日志
 
 - 2024-09-19: 初始版本，包含基本CORS配置
 - 2024-09-19: 添加调试工具和测试方法
+- 2024-09-19: 更新环境配置，支持调试和线上环境分离
 

@@ -6,7 +6,7 @@ export const getCurrentEnvironment = (): Environment => {
   
   if (hostname === 'pcbzodaitkpj.sealosbja.site') {
     return 'test';
-  } else if (hostname === 'jqpiogolcznu.sealosbja.site') {
+  } else if (hostname === 'cedezmdpgixn.sealosbja.site') {
     return 'production';
   } else {
     return 'development';
@@ -30,6 +30,11 @@ export const isApiTestAvailable = (): boolean => {
   return isTestEnvironment() || isDevelopmentEnvironment();
 };
 
+export const isChatTestAvailable = (): boolean => {
+  // 聊天测试功能只在测试环境和本地开发环境可用
+  return isTestEnvironment() || isDevelopmentEnvironment();
+};
+
 export const getEnvironmentInfo = () => {
   const env = getCurrentEnvironment();
   
@@ -43,7 +48,7 @@ export const getEnvironmentInfo = () => {
     case 'production':
       return {
         name: '线上环境',
-        backend: 'https://rmlqwqpmrpnw.sealosbja.site',
+        backend: 'https://ohciuodbxwdp.sealosbja.site',
         color: '#28a745'
       };
     case 'development':
