@@ -9,6 +9,7 @@ import ApiTestPage from './pages/auth/ApiTestPage';
 import Navigation from './components/layout/Navigation';
 import { AuthProvider } from './contexts/AuthContext';
 import { TranslationProvider } from './contexts/TranslationContext';
+import { WebSocketProvider } from './contexts/WebSocketContext';
 import { isApiTestAvailable, isChatTestAvailable, isProductionEnvironment } from './utils/environment';
 import { translations, TranslationKeys } from './data/translations';
 
@@ -18,6 +19,13 @@ const ROUTES = {
   login: '/login',
   register: '/register',
   dashboard: '/dashboard',
+  'dashboard-home': '/dashboard/home',
+  'dashboard-messages': '/dashboard/messages',
+  'dashboard-chat': '/dashboard/chat',
+  'dashboard-profile': '/dashboard/profile',
+  'dashboard-find-users': '/dashboard/find-users',
+  'dashboard-create-ai': '/dashboard/create-ai',
+  'dashboard-ai-library': '/dashboard/ai-library',
   chat: '/chat',
   'api-test': '/api-test',
   home: '/'
@@ -50,7 +58,7 @@ function AppContent() {
       } else {
         console.log('保持当前chat URL不变:', currentUrl);
       }
-    } else {
+    } else if (targetPath) {
       window.history.pushState({}, '', targetPath);
     }
     console.log('handleNavigate 完成，新页面状态:', routeKey);
@@ -66,6 +74,34 @@ function AppContent() {
       const routeEntry = Object.entries(ROUTES).find(([_, routePath]) => routePath === path);
       if (routeEntry) {
         setCurrentPage(routeEntry[0] as RouteKey);
+      } else if (path.startsWith('/dashboard/')) {
+        // 处理控制台子页面路由
+        const subPath = path.replace('/dashboard/', '');
+        switch (subPath) {
+          case 'home':
+            setCurrentPage('dashboard-home');
+            break;
+          case 'messages':
+            setCurrentPage('dashboard-messages');
+            break;
+          case 'chat':
+            setCurrentPage('dashboard-chat');
+            break;
+          case 'profile':
+            setCurrentPage('dashboard-profile');
+            break;
+          case 'find-users':
+            setCurrentPage('dashboard-find-users');
+            break;
+          case 'create-ai':
+            setCurrentPage('dashboard-create-ai');
+            break;
+          case 'ai-library':
+            setCurrentPage('dashboard-ai-library');
+            break;
+          default:
+            setCurrentPage('dashboard');
+        }
       } else {
         setCurrentPage('home');
       }
@@ -111,7 +147,14 @@ function AppContent() {
         return <RegisterPage {...commonProps} />;
       
       case 'dashboard':
-        return <DashboardPage {...commonProps} />;
+      case 'dashboard-home':
+      case 'dashboard-messages':
+      case 'dashboard-chat':
+      case 'dashboard-profile':
+      case 'dashboard-find-users':
+      case 'dashboard-create-ai':
+      case 'dashboard-ai-library':
+        return <DashboardPage {...commonProps} currentPage={currentPage} />;
       
       case 'chat':
         if (isChatTestAvailable()) {
@@ -295,7 +338,9 @@ function App() {
   return (
     <TranslationProvider>
       <AuthProvider>
-        <AppContent />
+        <WebSocketProvider>
+          <AppContent />
+        </WebSocketProvider>
       </AuthProvider>
     </TranslationProvider>
   );

@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket修复测试</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .connected { background-color: #d4edda; color: #155724; }
+        .disconnected { background-color: #f8d7da; color: #721c24; }
+        .error { background-color: #f8d7da; color: #721c24; }
+        .info { background-color: #d1ecf1; color: #0c5460; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        button:disabled { background-color: #6c757d; cursor: not-allowed; }
+        .log {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            height: 300px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+        }
+        input[type="text"] {
+            width: 200px;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            margin: 5px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 WebSocket修复测试</h1>
+        
+        <div id="status" class="status disconnected">未连接</div>
+        
+        <div>
+            <button id="connectBtn" onclick="connect()">连接WebSocket</button>
+            <button id="disconnectBtn" onclick="disconnect()" disabled>断开连接</button>
+            <button onclick="clearLog()">清空日志</button>
+        </div>
+        
+        <div>
+            <input type="text" id="messageInput" placeholder="输入测试消息" value="测试消息">
+            <button onclick="sendMessage()">发送消息</button>
+            <button onclick="sendTyping()">发送输入状态</button>
+            <button onclick="getHistory()">获取历史</button>
+        </div>
+        
+        <h3>日志输出:</h3>
+        <div id="log" class="log"></div>
+    </div>
+
+    <script>
+        let ws = null;
+        let isConnected = false;
+        let heartbeatInterval = null;
+
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${timestamp}] ${message}\n`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(message);
+        }
+
+        function updateStatus(status, className) {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = status;
+            statusDiv.className = `status ${className}`;
+        }
+
+        function connect() {
+            if (ws && ws.readyState === WebSocket.OPEN) {
+                log('⚠️ WebSocket已经连接');
+                return;
+            }
+
+            const userId = 10000000; // 测试用户ID
+            const wsUrl = `ws://localhost:8000/api/ws/${userId}`;
+            
+            log(`🔌 正在连接WebSocket: ${wsUrl}`);
+            updateStatus('连接中...', 'info');
+
+            try {
+                ws = new WebSocket(wsUrl);
+
+                ws.onopen = function(event) {
+                    log('✅ WebSocket连接成功');
+                    updateStatus('已连接', 'connected');
+                    isConnected = true;
+                    
+                    document.getElementById('connectBtn').disabled = true;
+                    document.getElementById('disconnectBtn').disabled = false;
+                    
+                    // 开始心跳
+                    startHeartbeat();
+                };
+
+                ws.onerror = function(error) {
+                    log('❌ WebSocket连接错误: ' + error);
+                    updateStatus('连接错误', 'error');
+                };
+
+                ws.onclose = function(event) {
+                    log(`🔌 WebSocket连接断开: ${event.code} - ${event.reason}`);
+                    updateStatus('已断开', 'disconnected');
+                    isConnected = false;
+                    
+                    document.getElementById('connectBtn').disabled = false;
+                    document.getElementById('disconnectBtn').disabled = true;
+                    
+                    // 停止心跳
+                    stopHeartbeat();
+                };
+
+                ws.onmessage = function(event) {
+                    log('📨 收到消息: ' + event.data);
+                    try {
+                        const data = JSON.parse(event.data);
+                        log('📋 解析数据: ' + JSON.stringify(data, null, 2));
+                    } catch (e) {
+                        log('⚠️ 消息解析失败: ' + e.message);
+                    }
+                };
+
+            } catch (error) {
+                log('❌ WebSocket创建失败: ' + error.message);
+                updateStatus('创建失败', 'error');
+            }
+        }
+
+        function disconnect() {
+            if (ws) {
+                log('🔌 主动断开WebSocket连接');
+                stopHeartbeat();
+                ws.close(1000, '主动断开');
+                ws = null;
+            }
+        }
+
+        function sendMessage() {
+            if (!isConnected) {
+                log('⚠️ WebSocket未连接，无法发送消息');
+                return;
+            }
+
+            const message = document.getElementById('messageInput').value;
+            const data = {
+                type: 'chat_message',
+                conversation_id: 'test-conversation-123',
+                content: message,
+                message_type: 'text'
+            };
+
+            log('📤 发送消息: ' + JSON.stringify(data));
+            ws.send(JSON.stringify(data));
+        }
+
+        function sendTyping() {
+            if (!isConnected) {
+                log('⚠️ WebSocket未连接，无法发送输入状态');
+                return;
+            }
+
+            const data = {
+                type: 'typing',
+                is_typing: true
+            };
+
+            log('⌨️ 发送输入状态: ' + JSON.stringify(data));
+            ws.send(JSON.stringify(data));
+        }
+
+        function getHistory() {
+            if (!isConnected) {
+                log('⚠️ WebSocket未连接，无法获取历史');
+                return;
+            }
+
+            const data = {
+                type: 'get_history',
+                conversation_id: 'test-conversation-123',
+                page: 1,
+                limit: 20
+            };
+
+            log('📜 获取历史消息: ' + JSON.stringify(data));
+            ws.send(JSON.stringify(data));
+        }
+
+        function startHeartbeat() {
+            heartbeatInterval = setInterval(() => {
+                if (isConnected && ws && ws.readyState === WebSocket.OPEN) {
+                    const data = {
+                        type: 'ping',
+                        timestamp: Date.now()
+                    };
+                    log('💓 发送心跳: ' + JSON.stringify(data));
+                    ws.send(JSON.stringify(data));
+                }
+            }, 30000);
+        }
+
+        function stopHeartbeat() {
+            if (heartbeatInterval) {
+                clearInterval(heartbeatInterval);
+                heartbeatInterval = null;
+                log('💓 停止心跳检测');
+            }
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        // 页面加载完成后的初始化
+        window.onload = function() {
+            log('🚀 WebSocket测试页面已加载');
+            log('💡 请确保后端WebSocket服务器运行在 ws://localhost:8000');
+        };
+    </script>
+</body>
+</html>
+

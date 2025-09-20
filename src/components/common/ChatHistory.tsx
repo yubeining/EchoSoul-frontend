@@ -43,7 +43,8 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
     if (diffInHours < 24) {
       return date.toLocaleTimeString('zh-CN', { 
         hour: '2-digit', 
-        minute: '2-digit' 
+        minute: '2-digit',
+        hour12: false  // 使用24小时制
       });
     } else if (diffInHours < 24 * 7) {
       return date.toLocaleDateString('zh-CN', { 

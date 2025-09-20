@@ -4,7 +4,7 @@ import Navigation from '../../components/layout/Navigation';
 import ChatDialog from '../../components/common/ChatDialog';
 import { useChat, ChatUser } from '../../hooks/useChat';
 import { useAuth } from '../../contexts/AuthContext';
-import { userApi } from '../../services/api';
+import { userApi, aiCharacterApi } from '../../services/api';
 
 interface ChatPageProps {
   onNavigate: (page: string) => void;
@@ -52,10 +52,44 @@ const ChatPage: React.FC<ChatPageProps> = ({
         setLoading(true);
         setError(null);
 
-        // 优先使用UID获取用户信息
-        if (chatUserUid) {
-          try {
-            console.log('使用UID获取用户信息:', chatUserUid);
+      // 优先使用UID获取用户信息
+      if (chatUserUid) {
+        try {
+          console.log('使用UID获取用户信息:', chatUserUid);
+          
+          // 检查是否是AI角色ID（以char_开头）
+          if (chatUserUid.startsWith('char_')) {
+            console.log('检测到AI角色ID，获取AI角色信息:', chatUserUid);
+            const response = await aiCharacterApi.getCharacterDetail(chatUserUid);
+            console.log('根据AI角色ID获取信息响应:', response);
+            
+            if (response.code === 1) {
+              const aiCharacter = response.data.character;
+              console.log('找到AI角色:', aiCharacter);
+              
+              const chatUser: ChatUser = {
+                id: aiCharacter.id.toString(),
+                username: aiCharacter.nickname,
+                nickname: aiCharacter.name,
+                avatar: aiCharacter.avatar || undefined,
+                status: 'online'
+              };
+              
+              setCurrentChatUser(chatUser);
+              
+              // 设置AI角色信息到useChat hook中
+              setOtherUserInfo({
+                id: aiCharacter.id,
+                nickname: aiCharacter.name,
+                avatar: aiCharacter.avatar || undefined
+              });
+              
+              console.log('AI角色模式初始化完成，角色信息已加载');
+            } else {
+              throw new Error(response.msg || '获取AI角色信息失败');
+            }
+          } else {
+            // 普通用户处理逻辑
             const response = await userApi.getUserByUid(chatUserUid);
             console.log('根据UID获取用户信息响应:', response);
             
@@ -84,10 +118,11 @@ const ChatPage: React.FC<ChatPageProps> = ({
             } else {
               throw new Error(response.msg || '获取用户信息失败');
             }
-          } catch (err) {
-            console.error('根据UID获取用户信息失败:', err);
-            setError('获取用户信息失败');
           }
+        } catch (err) {
+          console.error('根据UID获取信息失败:', err);
+          setError('获取信息失败');
+        }
         } else if (conversationId) {
           // 如果有会话ID，直接使用它来初始化聊天
           try {
@@ -288,15 +323,48 @@ const ChatPage: React.FC<ChatPageProps> = ({
                 <div className="character-box">
                   {/* 角色占位符 */}
                   <div className="character-placeholder">
-                    <div className="character-placeholder-icon">🎭</div>
-                    <div className="character-placeholder-text">Live2D 角色</div>
-                    <div className="character-placeholder-subtext">即将加载...</div>
+                    {currentChatUser?.avatar ? (
+                      <div className="character-avatar">
+                        <img 
+                          src={currentChatUser.avatar} 
+                          alt={currentChatUser.nickname}
+                          style={{ 
+                            width: '120px', 
+                            height: '120px', 
+                            borderRadius: '50%', 
+                            objectFit: 'cover',
+                            border: '3px solid rgba(255, 255, 255, 0.3)'
+                          }}
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            (e.currentTarget.nextElementSibling as HTMLElement)!.style.display = 'block';
+                          }}
+                        />
+                        <div className="character-placeholder-icon" style={{ display: 'none' }}>🤖</div>
+                      </div>
+                    ) : (
+                      <div className="character-placeholder-icon">
+                        {currentChatUser?.id && currentChatUser.id.startsWith('char_') ? '🤖' : '🎭'}
+                      </div>
+                    )}
+                    <div className="character-placeholder-text">
+                      {currentChatUser?.id && currentChatUser.id.startsWith('char_') ? 'AI角色' : 'Live2D 角色'}
+                    </div>
+                    <div className="character-placeholder-subtext">
+                      {currentChatUser?.nickname ? `${currentChatUser.nickname} 已就绪` : '即将加载...'}
+                    </div>
                   </div>
                   
                   {/* 角色信息 */}
                   <div className="character-info">
                     <div className="character-name">{currentChatUser?.nickname || '正在加载...'}</div>
-                    <div className="character-status">在线 • 正在聊天</div>
+                    <div className="character-status">
+                      在线 • 正在聊天
+                      {/* 显示AI角色标识 */}
+                      {currentChatUser?.id && currentChatUser.id.startsWith('char_') && (
+                        <span className="ai-character-indicator">🤖 AI角色</span>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

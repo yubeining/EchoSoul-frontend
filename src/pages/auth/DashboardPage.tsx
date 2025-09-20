@@ -7,32 +7,93 @@ import ChatHistory from '../../components/common/ChatHistory';
 import { useAuth } from '../../contexts/AuthContext';
 import { useUserSearch, UserSearchResult as UserSearchResultType } from '../../hooks/useUserSearch';
 import { useChat } from '../../hooks/useChat';
+import { aiCharacterApi, aiChatApi, CreateAICharacterRequest } from '../../services/api';
 
 interface DashboardPageProps {
   onNavigate: (page: string) => void;
   language: string;
   onLanguageChange: (language: string) => void;
+  currentPage?: string;
 }
 
 const DashboardPage: React.FC<DashboardPageProps> = ({ 
   onNavigate, 
   language, 
-  onLanguageChange 
+  onLanguageChange,
+  currentPage
 }) => {
   const [activeMenu, setActiveMenu] = useState('home');
   const [showChangePasswordModal, setShowChangePasswordModal] = useState(false);
   
+  // AI角色创建相关状态
+  const [aiCharacterForm, setAiCharacterForm] = useState({
+    name: '',
+    nickname: '',
+    avatar: '',
+    description: '',
+    personality: '',
+    background_story: '',
+    speaking_style: '',
+    is_public: false
+  });
+  const [isCreatingAI, setIsCreatingAI] = useState(false);
+  const [aiCreationError, setAiCreationError] = useState<string | null>(null);
+  const [aiCreationSuccess, setAiCreationSuccess] = useState<string | null>(null);
+  
+  // AI角色库相关状态
+  const [aiCharacters, setAiCharacters] = useState<any[]>([]);
+  const [aiLibraryLoading, setAiLibraryLoading] = useState(false);
+  const [aiLibraryError, setAiLibraryError] = useState<string | null>(null);
+  const [aiLibraryType, setAiLibraryType] = useState<'public' | 'my' | 'favorited'>('public');
+  
   const { user, logout } = useAuth();
   const { getOrCreateConversation } = useChat();
 
-  // 从URL参数中读取menu参数
+  // 根据currentPage prop设置activeMenu
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const menu = urlParams.get('menu');
-    if (menu && ['home', 'messages', 'chat', 'profile', 'findUsers'].includes(menu)) {
-      setActiveMenu(menu);
+    if (currentPage) {
+      switch (currentPage) {
+        case 'dashboard':
+        case 'dashboard-home':
+          setActiveMenu('home');
+          break;
+        case 'dashboard-messages':
+          setActiveMenu('messages');
+          break;
+        case 'dashboard-chat':
+          setActiveMenu('chat');
+          break;
+        case 'dashboard-profile':
+          setActiveMenu('profile');
+          break;
+        case 'dashboard-find-users':
+          setActiveMenu('findUsers');
+          break;
+        case 'dashboard-create-ai':
+          setActiveMenu('createAI');
+          break;
+        case 'dashboard-ai-library':
+          setActiveMenu('aiLibrary');
+          break;
+        default:
+          setActiveMenu('home');
+      }
+    } else {
+      // 兼容旧的URL参数方式
+      const urlParams = new URLSearchParams(window.location.search);
+      const menu = urlParams.get('menu');
+      if (menu && ['home', 'messages', 'chat', 'profile', 'findUsers', 'createAI', 'aiLibrary'].includes(menu)) {
+        setActiveMenu(menu);
+      }
     }
-  }, []);
+  }, [currentPage]);
+
+  // 当切换到AI角色库时加载数据
+  useEffect(() => {
+    if (activeMenu === 'aiLibrary') {
+      loadAICharacters('public');
+    }
+  }, [activeMenu]);
   
   // 使用用户搜索Hook
   const {
@@ -49,9 +110,155 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
 
   const handleMenuClick = (menu: string) => {
     setActiveMenu(menu);
+    
+    // 更新URL路径
+    const routeMap: { [key: string]: string } = {
+      'home': 'dashboard-home',
+      'messages': 'dashboard-messages',
+      'chat': 'dashboard-chat',
+      'profile': 'dashboard-profile',
+      'findUsers': 'dashboard-find-users',
+      'createAI': 'dashboard-create-ai',
+      'aiLibrary': 'dashboard-ai-library'
+    };
+    
+    const routeKey = routeMap[menu];
+    if (routeKey) {
+      onNavigate(routeKey);
+    }
+    
     // 切换到查找用户页面时清空搜索结果
     if (menu === 'findUsers') {
       clearResults();
+    }
+  };
+
+  // AI角色创建相关处理函数
+  const handleAICharacterFormChange = (field: string, value: string | boolean) => {
+    setAiCharacterForm(prev => ({
+      ...prev,
+      [field]: value
+    }));
+    // 清除错误和成功消息
+    setAiCreationError(null);
+    setAiCreationSuccess(null);
+  };
+
+  const handleCreateAICharacter = async () => {
+    if (!user) {
+      setAiCreationError('请先登录');
+      return;
+    }
+
+    // 验证必填字段
+    if (!aiCharacterForm.name.trim()) {
+      setAiCreationError('请输入角色名称');
+      return;
+    }
+    if (!aiCharacterForm.nickname.trim()) {
+      setAiCreationError('请输入角色昵称');
+      return;
+    }
+
+    try {
+      setIsCreatingAI(true);
+      setAiCreationError(null);
+      setAiCreationSuccess(null);
+
+      const requestData: CreateAICharacterRequest = {
+        name: aiCharacterForm.name.trim(),
+        nickname: aiCharacterForm.nickname.trim(),
+        avatar: aiCharacterForm.avatar.trim() || undefined,
+        description: aiCharacterForm.description.trim() || undefined,
+        personality: aiCharacterForm.personality.trim() || undefined,
+        background_story: aiCharacterForm.background_story.trim() || undefined,
+        speaking_style: aiCharacterForm.speaking_style.trim() || undefined,
+        is_public: aiCharacterForm.is_public
+      };
+
+      console.log('准备创建AI角色:', requestData);
+      const response = await aiCharacterApi.createCharacter(requestData);
+      
+      if (response.code === 1) {
+        setAiCreationSuccess(`AI角色"${aiCharacterForm.name}"创建成功！`);
+        // 重置表单
+        setAiCharacterForm({
+          name: '',
+          nickname: '',
+          avatar: '',
+          description: '',
+          personality: '',
+          background_story: '',
+          speaking_style: '',
+          is_public: false
+        });
+      } else {
+        setAiCreationError(response.msg || '创建失败');
+      }
+    } catch (error: any) {
+      console.error('创建AI角色失败:', error);
+      setAiCreationError(error.message || '创建AI角色失败，请重试');
+    } finally {
+      setIsCreatingAI(false);
+    }
+  };
+
+  const handleSaveDraft = () => {
+    // 保存草稿功能（可以保存到localStorage）
+    const draft = {
+      ...aiCharacterForm,
+      savedAt: new Date().toISOString()
+    };
+    localStorage.setItem('ai_character_draft', JSON.stringify(draft));
+    setAiCreationSuccess('草稿已保存');
+  };
+
+  // AI角色库相关处理函数
+  const loadAICharacters = async (listType: 'public' | 'my' | 'favorited' = 'public') => {
+    try {
+      setAiLibraryLoading(true);
+      setAiLibraryError(null);
+      
+      console.log('🤖 加载AI角色列表:', listType);
+      const response = await aiCharacterApi.getCharacters(listType, 1, 20);
+      
+      if (response.code === 1) {
+        setAiCharacters(response.data.characters);
+        setAiLibraryType(listType);
+      } else {
+        setAiLibraryError(response.msg || '加载失败');
+      }
+    } catch (error: any) {
+      console.error('❌ 加载AI角色列表失败:', error);
+      setAiLibraryError(error.message || '加载AI角色列表失败');
+    } finally {
+      setAiLibraryLoading(false);
+    }
+  };
+
+  const handleStartAIChat = async (character: any) => {
+    if (!user) {
+      alert('请先登录');
+      return;
+    }
+
+    try {
+      console.log('🤖 开始与AI角色聊天:', character);
+      const response = await aiChatApi.createAIConversation({
+        character_id: character.character_id
+      });
+      
+      if (response.code === 1) {
+        // 跳转到聊天页面
+        const chatUrl = `/chat?conversationId=${response.data.conversation_id}&chatUserUid=${character.character_id}`;
+        onNavigate('chat');
+        window.history.pushState({}, '', chatUrl);
+      } else {
+        alert(response.msg || '创建会话失败');
+      }
+    } catch (error: any) {
+      console.error('❌ 创建AI会话失败:', error);
+      alert(error.message || '创建AI会话失败');
     }
   };
 
@@ -142,6 +349,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
       chat: '聊天',
       profile: '我的',
       findUsers: '查找用户',
+      createAI: '创建AI角色',
+      aiLibrary: 'AI角色库',
       welcome: '欢迎使用 EchoSoul AI Platform',
       overview: '系统概述',
       overviewContent: 'EchoSoul AI Platform 是一个多模态AI人格化系统，融合自然语言处理、计算机视觉、语音识别与情感计算技术，构建具有独特个性和情感理解能力的智能交互伙伴，为用户提供更加人性化、个性化的AI体验。系统采用先进的深度学习架构，支持多种输入输出模态，能够理解用户意图、情感和上下文，提供智能对话服务和个性化推荐。',
@@ -168,6 +377,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
       chat: 'Chat',
       profile: 'Profile',
       findUsers: 'Find Users',
+      createAI: 'Create AI Character',
+      aiLibrary: 'AI Character Library',
       welcome: 'Welcome to EchoSoul AI Platform',
       overview: 'System Overview',
       overviewContent: 'EchoSoul AI Platform is a multimodal AI personalization system that integrates natural language processing, computer vision, speech recognition, and emotional computing technologies to build intelligent interactive partners with unique personalities and emotional understanding capabilities, providing users with a more humanized and personalized AI experience. The system uses advanced deep learning architecture, supports various input/output modalities, understands user intent, emotion, and context, and provides intelligent dialogue services and personalized recommendations.',
@@ -194,6 +405,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
       chat: 'チャット',
       profile: 'プロフィール',
       findUsers: 'ユーザー検索',
+      createAI: 'AIキャラクター作成',
+      aiLibrary: 'AIキャラクターライブラリ',
       welcome: 'EchoSoul AI Platform へようこそ',
       overview: 'システム概要',
       overviewContent: 'EchoSoul AI Platform は、自然言語処理、コンピュータビジョン、音声認識、感情計算技術を統合し、独特な個性と感情理解能力を持つ知的インタラクティブパートナーを構築し、ユーザーにより人間的で個性的なAI体験を提供するマルチモーダルAI人格化システムです。システムは先進的な深層学習アーキテクチャを使用し、様々な入出力モダリティをサポートし、ユーザーの意図、感情、文脈を理解し、知的対話サービスと個性化された推奨を提供します。',
@@ -455,6 +668,375 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
             )}
           </div>
         );
+      case 'createAI':
+        return (
+          <div className="dashboard-content">
+            <h1 className="dashboard-title">创建AI角色</h1>
+            
+            <div className="ai-character-creation">
+              <div className="creation-form">
+                <div className="form-section">
+                  <h3 className="section-title">基本信息</h3>
+                  <div className="form-group">
+                    <label className="form-label">角色名称 *</label>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      placeholder="请输入AI角色的名称"
+                      value={aiCharacterForm.name}
+                      onChange={(e) => handleAICharacterFormChange('name', e.target.value)}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">角色昵称 *</label>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      placeholder="请输入AI角色的昵称"
+                      value={aiCharacterForm.nickname}
+                      onChange={(e) => handleAICharacterFormChange('nickname', e.target.value)}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">角色描述</label>
+                    <textarea 
+                      className="form-textarea" 
+                      placeholder="请描述AI角色的基本信息和特点"
+                      rows={4}
+                      value={aiCharacterForm.description}
+                      onChange={(e) => handleAICharacterFormChange('description', e.target.value)}
+                    ></textarea>
+                  </div>
+                </div>
+                
+                <div className="form-section">
+                  <h3 className="section-title">人设设定</h3>
+                  <div className="form-group">
+                    <label className="form-label">性格特点</label>
+                    <input 
+                      type="text" 
+                      className="form-input" 
+                      placeholder="例如：温柔、幽默、专业"
+                      value={aiCharacterForm.personality}
+                      onChange={(e) => handleAICharacterFormChange('personality', e.target.value)}
+                    />
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">背景故事</label>
+                    <textarea 
+                      className="form-textarea" 
+                      placeholder="请描述AI角色的背景故事和经历"
+                      rows={3}
+                      value={aiCharacterForm.background_story}
+                      onChange={(e) => handleAICharacterFormChange('background_story', e.target.value)}
+                    ></textarea>
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">对话风格</label>
+                    <select 
+                      className="form-select"
+                      value={aiCharacterForm.speaking_style}
+                      onChange={(e) => handleAICharacterFormChange('speaking_style', e.target.value)}
+                    >
+                      <option value="">请选择对话风格</option>
+                      <option value="formal">正式</option>
+                      <option value="casual">随意</option>
+                      <option value="friendly">友好</option>
+                      <option value="professional">专业</option>
+                    </select>
+                  </div>
+                </div>
+                
+                <div className="form-section">
+                  <h3 className="section-title">外观设置</h3>
+                  <div className="form-group">
+                    <label className="form-label">头像URL</label>
+                    <input 
+                      type="url" 
+                      className="form-input" 
+                      placeholder="请输入头像图片URL（可选）"
+                      value={aiCharacterForm.avatar}
+                      onChange={(e) => handleAICharacterFormChange('avatar', e.target.value)}
+                    />
+                    {aiCharacterForm.avatar && (
+                      <div className="avatar-preview" style={{ marginTop: '10px' }}>
+                        <img 
+                          src={aiCharacterForm.avatar} 
+                          alt="头像预览" 
+                          style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover' }}
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                          }}
+                        />
+                      </div>
+                    )}
+                  </div>
+                  <div className="form-group">
+                    <label className="form-label">
+                      <input 
+                        type="checkbox" 
+                        checked={aiCharacterForm.is_public}
+                        onChange={(e) => handleAICharacterFormChange('is_public', e.target.checked)}
+                        style={{ marginRight: '8px' }}
+                      />
+                      公开此角色（其他用户可以搜索到）
+                    </label>
+                  </div>
+                </div>
+                
+                {/* 错误和成功消息显示 */}
+                {aiCreationError && (
+                  <div className="form-message error" style={{ color: '#e74c3c', marginBottom: '15px', padding: '10px', backgroundColor: '#fdf2f2', borderRadius: '4px' }}>
+                    {aiCreationError}
+                  </div>
+                )}
+                {aiCreationSuccess && (
+                  <div className="form-message success" style={{ color: '#27ae60', marginBottom: '15px', padding: '10px', backgroundColor: '#f0f9f0', borderRadius: '4px' }}>
+                    {aiCreationSuccess}
+                  </div>
+                )}
+                
+                <div className="form-actions">
+                  <button 
+                    className="btn-primary" 
+                    onClick={handleCreateAICharacter}
+                    disabled={isCreatingAI}
+                  >
+                    {isCreatingAI ? '创建中...' : '创建AI角色'}
+                  </button>
+                  <button 
+                    className="btn-secondary" 
+                    onClick={handleSaveDraft}
+                    disabled={isCreatingAI}
+                  >
+                    保存草稿
+                  </button>
+                </div>
+              </div>
+              
+              <div className="creation-preview">
+                <h3 className="preview-title">预览效果</h3>
+                <div className="preview-card">
+                  <div className="preview-avatar">
+                    {aiCharacterForm.avatar ? (
+                      <img 
+                        src={aiCharacterForm.avatar} 
+                        alt="头像预览" 
+                        style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover' }}
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            (e.currentTarget.nextElementSibling as HTMLElement)!.style.display = 'block';
+                          }}
+                      />
+                    ) : null}
+                    <div style={{ display: aiCharacterForm.avatar ? 'none' : 'block' }}>🤖</div>
+                  </div>
+                  <div className="preview-info">
+                    <div className="preview-name">
+                      {aiCharacterForm.name || 'AI角色名称'}
+                    </div>
+                    <div className="preview-desc">
+                      {aiCharacterForm.description || '角色描述将在这里显示'}
+                    </div>
+                    {aiCharacterForm.personality && (
+                      <div className="preview-personality" style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
+                        性格：{aiCharacterForm.personality}
+                      </div>
+                    )}
+                    {aiCharacterForm.speaking_style && (
+                      <div className="preview-style" style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>
+                        风格：{aiCharacterForm.speaking_style}
+                      </div>
+                    )}
+                  </div>
+                </div>
+                <div className="preview-chat">
+                  <div className="chat-message ai-message">
+                    <div className="message-avatar">
+                      {aiCharacterForm.avatar ? (
+                        <img 
+                          src={aiCharacterForm.avatar} 
+                          alt="头像" 
+                          style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }}
+                          onError={(e) => {
+                            e.currentTarget.style.display = 'none';
+                            (e.currentTarget.nextElementSibling as HTMLElement)!.style.display = 'block';
+                          }}
+                        />
+                      ) : null}
+                      <div style={{ display: aiCharacterForm.avatar ? 'none' : 'block' }}>🤖</div>
+                    </div>
+                    <div className="message-content">
+                      你好！我是{aiCharacterForm.nickname || '你创建的AI角色'}，很高兴认识你！
+                      {aiCharacterForm.background_story && (
+                        <div style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
+                          {aiCharacterForm.background_story.substring(0, 50)}...
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      case 'aiLibrary':
+        return (
+          <div className="dashboard-content">
+            <h1 className="dashboard-title">AI角色库</h1>
+            
+            {/* 筛选标签 */}
+            <div className="ai-library-filters" style={{ marginBottom: '20px' }}>
+              <button 
+                className={`filter-btn ${aiLibraryType === 'public' ? 'active' : ''}`}
+                onClick={() => loadAICharacters('public')}
+              >
+                公开角色
+              </button>
+              <button 
+                className={`filter-btn ${aiLibraryType === 'my' ? 'active' : ''}`}
+                onClick={() => loadAICharacters('my')}
+              >
+                我创建的
+              </button>
+              <button 
+                className={`filter-btn ${aiLibraryType === 'favorited' ? 'active' : ''}`}
+                onClick={() => loadAICharacters('favorited')}
+              >
+                我收藏的
+              </button>
+            </div>
+
+            {/* 加载状态 */}
+            {aiLibraryLoading && (
+              <div className="loading-message" style={{ textAlign: 'center', padding: '20px' }}>
+                加载中...
+              </div>
+            )}
+
+            {/* 错误消息 */}
+            {aiLibraryError && (
+              <div className="error-message" style={{ color: '#e74c3c', textAlign: 'center', padding: '20px' }}>
+                {aiLibraryError}
+              </div>
+            )}
+
+            {/* AI角色列表 */}
+            {!aiLibraryLoading && !aiLibraryError && (
+              <div className="ai-characters-grid" style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', 
+                gap: '20px',
+                marginTop: '20px'
+              }}>
+                {aiCharacters.length === 0 ? (
+                  <div style={{ gridColumn: '1 / -1', textAlign: 'center', padding: '40px', color: '#666' }}>
+                    暂无AI角色
+                  </div>
+                ) : (
+                  aiCharacters.map((character) => (
+                    <div key={character.character_id} className="ai-character-card" style={{
+                      border: '1px solid #e0e0e0',
+                      borderRadius: '8px',
+                      padding: '20px',
+                      backgroundColor: '#fff',
+                      boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
+                      transition: 'transform 0.2s, box-shadow 0.2s'
+                    }}>
+                      <div className="character-header" style={{ display: 'flex', alignItems: 'center', marginBottom: '15px' }}>
+                        <div className="character-avatar" style={{ marginRight: '15px' }}>
+                          {character.avatar ? (
+                            <img 
+                              src={character.avatar} 
+                              alt={character.name}
+                              style={{ 
+                                width: '50px', 
+                                height: '50px', 
+                                borderRadius: '50%', 
+                                objectFit: 'cover' 
+                              }}
+                              onError={(e) => {
+                                e.currentTarget.style.display = 'none';
+                                (e.currentTarget.nextElementSibling as HTMLElement)!.style.display = 'block';
+                              }}
+                            />
+                          ) : null}
+                          <div style={{ 
+                            display: character.avatar ? 'none' : 'flex',
+                            width: '50px', 
+                            height: '50px', 
+                            borderRadius: '50%', 
+                            backgroundColor: '#f0f0f0',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontSize: '24px'
+                          }}>
+                            🤖
+                          </div>
+                        </div>
+                        <div className="character-info">
+                          <h3 style={{ margin: '0 0 5px 0', fontSize: '18px' }}>{character.name}</h3>
+                          <p style={{ margin: '0', color: '#666', fontSize: '14px' }}>@{character.nickname}</p>
+                        </div>
+                      </div>
+                      
+                      {character.description && (
+                        <div className="character-description" style={{ marginBottom: '15px' }}>
+                          <p style={{ margin: '0', fontSize: '14px', lineHeight: '1.4' }}>
+                            {character.description}
+                          </p>
+                        </div>
+                      )}
+                      
+                      {character.personality && (
+                        <div className="character-personality" style={{ marginBottom: '15px' }}>
+                          <span style={{ 
+                            fontSize: '12px', 
+                            color: '#666', 
+                            backgroundColor: '#f0f0f0', 
+                            padding: '2px 8px', 
+                            borderRadius: '12px',
+                            marginRight: '8px'
+                          }}>
+                            性格: {character.personality}
+                          </span>
+                        </div>
+                      )}
+                      
+                      <div className="character-stats" style={{ 
+                        display: 'flex', 
+                        justifyContent: 'space-between', 
+                        alignItems: 'center',
+                        marginBottom: '15px',
+                        fontSize: '12px',
+                        color: '#666'
+                      }}>
+                        <span>使用次数: {character.usage_count}</span>
+                        <span>点赞数: {character.like_count}</span>
+                      </div>
+                      
+                      <div className="character-actions" style={{ display: 'flex', gap: '10px' }}>
+                        <button 
+                          className="btn-primary"
+                          onClick={() => handleStartAIChat(character)}
+                          style={{ flex: 1, padding: '8px 16px', fontSize: '14px' }}
+                        >
+                          开始聊天
+                        </button>
+                        <button 
+                          className="btn-secondary"
+                          style={{ padding: '8px 16px', fontSize: '14px' }}
+                        >
+                          {character.is_public ? '已公开' : '私有'}
+                        </button>
+                      </div>
+                    </div>
+                  ))
+                )}
+              </div>
+            )}
+          </div>
+        );
       default:
         return null;
     }
@@ -512,6 +1094,20 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
               <span className="menu-icon">🔍</span>
               <span className="menu-text">{t.findUsers}</span>
             </button>
+          <button 
+            className={`menu-item ${activeMenu === 'createAI' ? 'active' : ''}`}
+            onClick={() => handleMenuClick('createAI')}
+          >
+            <span className="menu-icon">🤖</span>
+            <span className="menu-text">{t.createAI}</span>
+          </button>
+          <button 
+            className={`menu-item ${activeMenu === 'aiLibrary' ? 'active' : ''}`}
+            onClick={() => handleMenuClick('aiLibrary')}
+          >
+            <span className="menu-icon">📚</span>
+            <span className="menu-text">{t.aiLibrary}</span>
+          </button>
           </nav>
         </div>
 

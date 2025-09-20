@@ -61,6 +61,82 @@ export interface UserSearchResult {
   createdAt?: string;
 }
 
+// AI角色相关接口
+export interface AICharacter {
+  id: number;
+  character_id: string;
+  name: string;
+  nickname: string;
+  avatar: string | null;
+  description: string | null;
+  personality: string | null;
+  background_story: string | null;
+  speaking_style: string | null;
+  creator_id: number;
+  is_public: boolean;
+  status: number;
+  usage_count: number;
+  like_count: number;
+  create_time: string;
+  update_time: string;
+}
+
+export interface CreateAICharacterRequest {
+  name: string;
+  nickname: string;
+  avatar?: string;
+  description?: string;
+  personality?: string;
+  background_story?: string;
+  speaking_style?: string;
+  is_public?: boolean;
+}
+
+export interface UpdateAICharacterRequest {
+  name?: string;
+  nickname?: string;
+  avatar?: string;
+  description?: string;
+  personality?: string;
+  background_story?: string;
+  speaking_style?: string;
+  is_public?: boolean;
+}
+
+export interface AICharacterListResponse {
+  characters: AICharacter[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+  };
+}
+
+export interface AICharacterDetailResponse {
+  character: AICharacter;
+}
+
+export interface CreateAICharacterResponse {
+  character_id: string;
+  message: string;
+}
+
+export interface AIConversationResponse {
+  conversation_id: string;
+  character_info: {
+    id: number;
+    character_id: string;
+    name: string;
+    nickname: string;
+    avatar: string | null;
+  };
+  message: string;
+}
+
+export interface CreateAIConversationRequest {
+  character_id: string;
+}
+
 // 分页信息接口
 export interface PaginationInfo {
   currentPage: number;
@@ -550,6 +626,142 @@ export const chatApi = {
     } catch (error: any) {
       console.error('获取消息列表失败:', error);
       throw new Error(error.message || '获取消息列表失败');
+    }
+  }
+};
+
+// AI角色相关API
+export const aiCharacterApi = {
+  // 创建AI角色
+  async createCharacter(data: CreateAICharacterRequest): Promise<ApiResponse<CreateAICharacterResponse>> {
+    try {
+      console.log('🤖 创建AI角色:', data);
+      const response = await apiClient.post('/api/ai/characters', data) as ApiResponse<CreateAICharacterResponse>;
+      console.log('✅ 创建AI角色成功:', response);
+      return response;
+    } catch (error: any) {
+      console.error('❌ 创建AI角色失败:', error);
+      throw new Error(error.message || '创建AI角色失败');
+    }
+  },
+
+  // 获取AI角色列表
+  async getCharacters(listType: 'public' | 'my' | 'favorited' = 'public', page: number = 1, limit: number = 20): Promise<ApiResponse<AICharacterListResponse>> {
+    try {
+      console.log('🤖 获取AI角色列表:', { listType, page, limit });
+      const response = await apiClient.get(`/api/ai/characters?list_type=${listType}&page=${page}&limit=${limit}`) as ApiResponse<AICharacterListResponse>;
+      console.log('✅ 获取AI角色列表成功:', response);
+      return response;
+    } catch (error: any) {
+      console.error('❌ 获取AI角色列表失败:', error);
+      throw new Error(error.message || '获取AI角色列表失败');
+    }
+  },
+
+  // 获取AI角色详情
+  async getCharacterDetail(characterId: string): Promise<ApiResponse<AICharacterDetailResponse>> {
+    try {
+      console.log('🤖 获取AI角色详情:', characterId);
+      const response = await apiClient.get(`/api/ai/characters/${characterId}`) as ApiResponse<AICharacterDetailResponse>;
+      console.log('✅ 获取AI角色详情成功:', response);
+      return response;
+    } catch (error: any) {
+      console.error('❌ 获取AI角色详情失败:', error);
+      throw new Error(error.message || '获取AI角色详情失败');
+    }
+  },
+
+  // 更新AI角色
+  async updateCharacter(characterId: string, data: UpdateAICharacterRequest): Promise<ApiResponse<{ message: string }>> {
+    try {
+      console.log('🤖 更新AI角色:', { characterId, data });
+      const response = await apiClient.put(`/api/ai/characters/${characterId}`, data) as ApiResponse<{ message: string }>;
+      console.log('✅ 更新AI角色成功:', response);
+      return response;
+    } catch (error: any) {
+      console.error('❌ 更新AI角色失败:', error);
+      throw new Error(error.message || '更新AI角色失败');
+    }
+  },
+
+  // 删除AI角色
+  async deleteCharacter(characterId: string): Promise<ApiResponse<{ message: string }>> {
+    try {
+      console.log('🤖 删除AI角色:', characterId);
+      const response = await apiClient.delete(`/api/ai/characters/${characterId}`) as ApiResponse<{ message: string }>;
+      console.log('✅ 删除AI角色成功:', response);
+      return response;
+    } catch (error: any) {
+      console.error('❌ 删除AI角色失败:', error);
+      throw new Error(error.message || '删除AI角色失败');
+    }
+  },
+
+  // 收藏AI角色
+  async favoriteCharacter(characterId: string): Promise<ApiResponse<{ message: string }>> {
+    try {
+      console.log('🤖 收藏AI角色:', characterId);
+      const response = await apiClient.post(`/api/ai/characters/${characterId}/favorite`) as ApiResponse<{ message: string }>;
+      console.log('✅ 收藏AI角色成功:', response);
+      return response;
+    } catch (error: any) {
+      console.error('❌ 收藏AI角色失败:', error);
+      throw new Error(error.message || '收藏AI角色失败');
+    }
+  },
+
+  // 取消收藏AI角色
+  async unfavoriteCharacter(characterId: string): Promise<ApiResponse<{ message: string }>> {
+    try {
+      console.log('🤖 取消收藏AI角色:', characterId);
+      const response = await apiClient.delete(`/api/ai/characters/${characterId}/favorite`) as ApiResponse<{ message: string }>;
+      console.log('✅ 取消收藏AI角色成功:', response);
+      return response;
+    } catch (error: any) {
+      console.error('❌ 取消收藏AI角色失败:', error);
+      throw new Error(error.message || '取消收藏AI角色失败');
+    }
+  }
+};
+
+// AI对话相关API
+export const aiChatApi = {
+  // 创建用户-AI会话
+  async createAIConversation(data: CreateAIConversationRequest): Promise<ApiResponse<AIConversationResponse>> {
+    try {
+      console.log('🤖 创建AI会话:', data);
+      const response = await apiClient.post('/api/ai/conversations/ai', data) as ApiResponse<AIConversationResponse>;
+      console.log('✅ 创建AI会话成功:', response);
+      return response;
+    } catch (error: any) {
+      console.error('❌ 创建AI会话失败:', error);
+      throw new Error(error.message || '创建AI会话失败');
+    }
+  },
+
+  // 获取用户AI会话列表
+  async getAIConversations(page: number = 1, limit: number = 20): Promise<ApiResponse<{ conversations: any[]; total: number; page: number; limit: number }>> {
+    try {
+      console.log('🤖 获取AI会话列表:', { page, limit });
+      const response = await apiClient.get(`/api/chat/conversations/ai?page=${page}&limit=${limit}`) as ApiResponse<{ conversations: any[]; total: number; page: number; limit: number }>;
+      console.log('✅ 获取AI会话列表成功:', response);
+      return response;
+    } catch (error: any) {
+      console.error('❌ 获取AI会话列表失败:', error);
+      throw new Error(error.message || '获取AI会话列表失败');
+    }
+  },
+
+  // 发送消息到AI角色
+  async sendMessageToAI(conversationId: string, content: string): Promise<ApiResponse<any>> {
+    try {
+      console.log('🤖 发送消息到AI:', { conversationId, content });
+      const response = await apiClient.post(`/api/chat/messages/ai?conversation_id=${conversationId}&content=${encodeURIComponent(content)}`) as ApiResponse<any>;
+      console.log('✅ 发送消息到AI成功:', response);
+      return response;
+    } catch (error: any) {
+      console.error('❌ 发送消息到AI失败:', error);
+      throw new Error(error.message || '发送消息到AI失败');
     }
   }
 };

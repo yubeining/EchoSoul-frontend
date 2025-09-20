@@ -27,7 +27,16 @@ const ChatDialog: React.FC<ChatDialogProps> = memo(({
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   
-  const { fetchMessages, sendMessage, currentMessages, setOtherUserInfo } = useChat();
+  const { 
+    fetchMessages, 
+    sendMessage, 
+    currentMessages, 
+    setOtherUserInfo,
+    setCurrentConversationId,
+    sendTyping,
+    loadHistory,
+    isTyping
+  } = useChat();
 
   // 自动滚动到底部
   const scrollToBottom = () => {
@@ -39,6 +48,17 @@ const ChatDialog: React.FC<ChatDialogProps> = memo(({
     setMessagesLoaded(false);
     setMessages([]);
   }, [conversationId]);
+
+  // WebSocket会话管理
+  useEffect(() => {
+    if (conversationId && isOpen) {
+      // 设置当前会话ID
+      setCurrentConversationId(conversationId);
+      
+      // 加载历史消息
+      loadHistory(conversationId);
+    }
+  }, [conversationId, isOpen, setCurrentConversationId, loadHistory]);
 
   // 设置对方用户信息
   useEffect(() => {
@@ -58,10 +78,11 @@ const ChatDialog: React.FC<ChatDialogProps> = memo(({
   // 监听currentMessages的变化，同步到本地messages状态
   useEffect(() => {
     if (currentMessages.length > 0) {
-      console.log('🔄 同步currentMessages到本地messages:', currentMessages);
+      console.log('🔄 ChatDialog同步currentMessages到本地messages:', currentMessages.length, '条消息');
+      console.log('🔄 当前本地messages长度:', messages.length);
       setMessages(currentMessages);
     }
-  }, [currentMessages]);
+  }, [currentMessages, messages.length]);
 
   // 获取消息列表
   useEffect(() => {
@@ -135,15 +156,14 @@ const ChatDialog: React.FC<ChatDialogProps> = memo(({
     
     try {
       // 使用聊天Hook发送消息
-      const newMessage = await sendMessage(
+      await sendMessage(
         conversationId,
         content,
         'text'
       );
       
-      if (newMessage) {
-        setMessages(prev => [...prev, newMessage]);
-      }
+      // 注意：不需要手动添加消息到本地状态，因为useChat已经通过setCurrentMessages处理了
+      // 消息会通过useEffect监听currentMessages的变化自动同步到本地messages状态
       
       // 如果提供了外部发送消息回调，也调用它
       if (onSendMessage) {
@@ -169,7 +189,8 @@ const ChatDialog: React.FC<ChatDialogProps> = memo(({
     const date = new Date(timestamp);
     return date.toLocaleTimeString('zh-CN', { 
       hour: '2-digit', 
-      minute: '2-digit' 
+      minute: '2-digit',
+      hour12: false  // 使用24小时制
     });
   };
 
@@ -213,6 +234,10 @@ const ChatDialog: React.FC<ChatDialogProps> = memo(({
             <div className="chat-user-status">
               {user.status === 'online' ? '在线' : '离线'}
               {user.lastActive && ` • ${user.lastActive}`}
+              {/* 显示AI角色标识 */}
+              {user.id && user.id.startsWith('char_') && (
+                <span className="ai-character-badge">🤖 AI角色</span>
+              )}
             </div>
           </div>
         </div>
@@ -270,6 +295,21 @@ const ChatDialog: React.FC<ChatDialogProps> = memo(({
             );
           })
         )}
+        
+        {/* 输入状态显示 */}
+        {isTyping && Object.keys(isTyping).length > 0 && (
+          <div className="typing-indicator">
+            <div className="typing-dots">
+              <span></span>
+              <span></span>
+              <span></span>
+            </div>
+            <span className="typing-text">
+              {Object.keys(isTyping).filter(userId => isTyping[parseInt(userId)]).length > 0 && '正在输入...'}
+            </span>
+          </div>
+        )}
+        
         <div ref={messagesEndRef} />
       </div>
 
@@ -282,7 +322,11 @@ const ChatDialog: React.FC<ChatDialogProps> = memo(({
             className="chat-input"
             placeholder={`发送消息给 ${user.nickname}...`}
             value={inputValue}
-            onChange={(e) => setInputValue(e.target.value)}
+            onChange={(e) => {
+              setInputValue(e.target.value);
+              // 发送输入状态
+              sendTyping(e.target.value.length > 0);
+            }}
             onKeyPress={handleKeyPress}
             disabled={sending}
           />

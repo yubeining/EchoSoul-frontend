@@ -1,0 +1,358 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WebSocket测试页面</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .container {
+            border: 1px solid #ddd;
+            border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+        .status {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 10px;
+        }
+        .connected {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .disconnected {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+        .messages {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 10px;
+            background-color: #f8f9fa;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 5px;
+            border-radius: 4px;
+        }
+        .message.sent {
+            background-color: #007bff;
+            color: white;
+            text-align: right;
+        }
+        .message.received {
+            background-color: #e9ecef;
+            color: #333;
+        }
+        .input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+        input[type="text"] {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        .btn-secondary {
+            background-color: #6c757d;
+            color: white;
+        }
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+        .btn-primary:hover, .btn-secondary:hover, .btn-success:hover, .btn-danger:hover {
+            opacity: 0.8;
+        }
+        .typing-indicator {
+            font-style: italic;
+            color: #666;
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <h1>WebSocket测试页面</h1>
+    
+    <div class="container">
+        <h2>连接状态</h2>
+        <div id="status" class="status disconnected">未连接</div>
+        <div class="input-group">
+            <input type="text" id="userId" placeholder="用户ID" value="1001">
+            <button class="btn-primary" onclick="connect()">连接</button>
+            <button class="btn-danger" onclick="disconnect()">断开</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>消息测试</h2>
+        <div class="input-group">
+            <input type="text" id="conversationId" placeholder="会话ID" value="conv-uuid-123">
+            <button class="btn-secondary" onclick="getHistory()">获取历史消息</button>
+            <button class="btn-secondary" onclick="getOnlineStatus()">获取在线状态</button>
+        </div>
+        <div class="input-group">
+            <input type="text" id="messageInput" placeholder="输入消息..." onkeypress="handleKeyPress(event)">
+            <button class="btn-success" onclick="sendMessage()">发送消息</button>
+        </div>
+        <div class="input-group">
+            <button class="btn-secondary" onclick="sendTyping(true)">开始输入</button>
+            <button class="btn-secondary" onclick="sendTyping(false)">停止输入</button>
+        </div>
+    </div>
+
+    <div class="container">
+        <h2>消息记录</h2>
+        <div id="typingIndicator" class="typing-indicator" style="display: none;"></div>
+        <div id="messages" class="messages"></div>
+        <button class="btn-secondary" onclick="clearMessages()">清空消息</button>
+    </div>
+
+    <script>
+        let ws = null;
+        let isConnected = false;
+        let typingTimer = null;
+
+        function updateStatus(connected, message) {
+            const statusDiv = document.getElementById('status');
+            if (connected) {
+                statusDiv.className = 'status connected';
+                statusDiv.textContent = message || '已连接';
+            } else {
+                statusDiv.className = 'status disconnected';
+                statusDiv.textContent = message || '未连接';
+            }
+            isConnected = connected;
+        }
+
+        function connect() {
+            const userId = document.getElementById('userId').value;
+            if (!userId) {
+                alert('请输入用户ID');
+                return;
+            }
+
+            if (ws) {
+                ws.close();
+            }
+
+            const wsUrl = `ws://localhost:8000/api/ws/${userId}`;
+            console.log('正在连接:', wsUrl);
+            
+            ws = new WebSocket(wsUrl);
+
+            ws.onopen = function(event) {
+                console.log('WebSocket连接已建立');
+                updateStatus(true, `已连接到用户 ${userId}`);
+                addMessage('system', '连接已建立', 'received');
+            };
+
+            ws.onerror = function(error) {
+                console.error('WebSocket连接错误:', error);
+                updateStatus(false, '连接错误');
+                addMessage('system', '连接错误', 'received');
+            };
+
+            ws.onclose = function(event) {
+                console.log('WebSocket连接已关闭:', event.code, event.reason);
+                updateStatus(false, '连接已关闭');
+                addMessage('system', '连接已关闭', 'received');
+            };
+
+            ws.onmessage = function(event) {
+                const data = JSON.parse(event.data);
+                console.log('收到消息:', data);
+                handleMessage(data);
+            };
+        }
+
+        function disconnect() {
+            if (ws) {
+                ws.close(1000, '主动断开');
+                ws = null;
+            }
+        }
+
+        function handleMessage(data) {
+            switch(data.type) {
+                case 'new_message':
+                    addMessage(data.data.sender_id, data.data.content, 'received');
+                    break;
+                case 'response':
+                    if (data.original_type === 'chat_message') {
+                        if (data.result.success) {
+                            addMessage('system', '消息发送成功', 'received');
+                        } else {
+                            addMessage('system', '消息发送失败: ' + data.result.error, 'received');
+                        }
+                    } else if (data.original_type === 'get_history' && data.result.success) {
+                        addMessage('system', `获取到 ${data.result.messages.length} 条历史消息`, 'received');
+                        data.result.messages.forEach(msg => {
+                            addMessage(msg.sender_id, msg.content, 'received');
+                        });
+                    } else if (data.original_type === 'get_online_status' && data.result.success) {
+                        addMessage('system', `在线用户: ${data.result.online_users.join(', ')}`, 'received');
+                    }
+                    break;
+                case 'typing_status':
+                    showTypingStatus(data.data.user_id, data.data.is_typing);
+                    break;
+                case 'error':
+                    addMessage('system', '错误: ' + data.message, 'received');
+                    break;
+                default:
+                    addMessage('system', '未知消息类型: ' + data.type, 'received');
+            }
+        }
+
+        function sendMessage() {
+            if (!isConnected) {
+                alert('请先连接WebSocket');
+                return;
+            }
+
+            const conversationId = document.getElementById('conversationId').value;
+            const messageInput = document.getElementById('messageInput');
+            const content = messageInput.value.trim();
+
+            if (!conversationId) {
+                alert('请输入会话ID');
+                return;
+            }
+
+            if (!content) {
+                alert('请输入消息内容');
+                return;
+            }
+
+            const message = {
+                type: 'chat_message',
+                conversation_id: conversationId,
+                content: content,
+                message_type: 'text'
+            };
+
+            ws.send(JSON.stringify(message));
+            addMessage('我', content, 'sent');
+            messageInput.value = '';
+        }
+
+        function sendTyping(isTyping) {
+            if (!isConnected) {
+                alert('请先连接WebSocket');
+                return;
+            }
+
+            const message = {
+                type: 'typing',
+                is_typing: isTyping
+            };
+
+            ws.send(JSON.stringify(message));
+        }
+
+        function getHistory() {
+            if (!isConnected) {
+                alert('请先连接WebSocket');
+                return;
+            }
+
+            const conversationId = document.getElementById('conversationId').value;
+            if (!conversationId) {
+                alert('请输入会话ID');
+                return;
+            }
+
+            const message = {
+                type: 'get_history',
+                conversation_id: conversationId,
+                page: 1,
+                limit: 20
+            };
+
+            ws.send(JSON.stringify(message));
+        }
+
+        function getOnlineStatus() {
+            if (!isConnected) {
+                alert('请先连接WebSocket');
+                return;
+            }
+
+            const message = {
+                type: 'get_online_status'
+            };
+
+            ws.send(JSON.stringify(message));
+        }
+
+        function addMessage(sender, content, type) {
+            const messagesDiv = document.getElementById('messages');
+            const messageDiv = document.createElement('div');
+            messageDiv.className = `message ${type}`;
+            messageDiv.innerHTML = `<strong>${sender}:</strong> ${content} <small>(${new Date().toLocaleTimeString()})</small>`;
+            messagesDiv.appendChild(messageDiv);
+            messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        }
+
+        function showTypingStatus(userId, isTyping) {
+            const typingDiv = document.getElementById('typingIndicator');
+            if (isTyping) {
+                typingDiv.textContent = `用户 ${userId} 正在输入...`;
+                typingDiv.style.display = 'block';
+            } else {
+                typingDiv.style.display = 'none';
+            }
+        }
+
+        function clearMessages() {
+            document.getElementById('messages').innerHTML = '';
+            document.getElementById('typingIndicator').style.display = 'none';
+        }
+
+        function handleKeyPress(event) {
+            if (event.key === 'Enter') {
+                sendMessage();
+            }
+        }
+
+        // 心跳检测
+        setInterval(() => {
+            if (isConnected && ws.readyState === WebSocket.OPEN) {
+                ws.send(JSON.stringify({
+                    type: 'ping',
+                    timestamp: Date.now()
+                }));
+            }
+        }, 30000);
+    </script>
+</body>
+</html>
+
+

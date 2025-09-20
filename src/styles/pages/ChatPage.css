@@ -119,6 +119,20 @@
 .character-status {
   color: rgba(255, 255, 255, 0.8);
   font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.ai-character-indicator {
+  background: rgba(102, 126, 234, 0.8);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 10px;
+  font-weight: 500;
+  white-space: nowrap;
+  backdrop-filter: blur(5px);
 }
 
 /* 装饰元素 */

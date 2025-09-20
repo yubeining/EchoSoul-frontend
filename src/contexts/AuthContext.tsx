@@ -6,6 +6,7 @@ interface AuthContextType {
   // 状态
   isAuthenticated: boolean;
   user: UserInfo | null;
+  token: string | null;
   isLoading: boolean;
   
   // 方法
@@ -26,14 +27,16 @@ interface AuthProviderProps {
 export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<UserInfo | null>(null);
+  const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   // 初始化认证状态
   useEffect(() => {
     const initAuth = async () => {
       try {
-        const token = tokenManager.getToken();
-        if (token) {
+        const currentToken = tokenManager.getToken();
+        setToken(currentToken);
+        if (currentToken) {
           // 验证Token并获取用户信息
           const response = await authApi.getUserInfo();
           if (response.code === 1) {
@@ -42,6 +45,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           } else {
             // Token无效，清除
             tokenManager.removeToken();
+            setToken(null);
           }
         }
       } catch (error) {
@@ -66,6 +70,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         
         // 保存Token和用户信息
         tokenManager.setToken(token);
+        setToken(token);
         setUser(userInfo);
         setIsAuthenticated(true);
         
@@ -116,6 +121,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     } finally {
       // 无论后端请求是否成功，都清除本地状态
       tokenManager.removeToken();
+      setToken(null);
       setUser(null);
       setIsAuthenticated(false);
     }
@@ -136,6 +142,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const value: AuthContextType = {
     isAuthenticated,
     user,
+    token,
     isLoading,
     login,
     register,
