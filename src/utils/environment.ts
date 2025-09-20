@@ -31,8 +31,8 @@ export const isApiTestAvailable = (): boolean => {
 };
 
 export const isChatTestAvailable = (): boolean => {
-  // 聊天测试功能只在测试环境和本地开发环境可用
-  return isTestEnvironment() || isDevelopmentEnvironment();
+  // 聊天功能在所有环境都可用
+  return true;
 };
 
 export const getEnvironmentInfo = () => {

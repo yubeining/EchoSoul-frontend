@@ -9,7 +9,7 @@ import ApiTestPage from './pages/auth/ApiTestPage';
 import Navigation from './components/layout/Navigation';
 import { AuthProvider } from './contexts/AuthContext';
 import { TranslationProvider } from './contexts/TranslationContext';
-import { isApiTestAvailable, isChatTestAvailable } from './utils/environment';
+import { isApiTestAvailable, isChatTestAvailable, isProductionEnvironment } from './utils/environment';
 import { translations, TranslationKeys } from './data/translations';
 
 // 路由配置
@@ -184,22 +184,24 @@ function AppContent() {
                 return null;
               })()}
               
-              {/* 强制显示测试按钮用于调试 */}
-              <button 
-                className="btn-secondary" 
-                  onClick={() => {
-                    console.log('强制测试按钮被点击');
-                    const chatUrl = '/chat?userid=10000001&uid=test_user_001';
-                    console.log('准备跳转到:', chatUrl);
-                    window.history.pushState({}, '', chatUrl);
-                    console.log('URL已设置，当前URL:', window.location.href);
-                    handleNavigate('chat');
-                    console.log('handleNavigate已调用');
-                  }}
-                style={{ marginTop: '10px', backgroundColor: '#ff6b6b' }}
-              >
-                强制测试聊天 (调试用)
-              </button>
+              {/* 强制显示测试按钮用于调试 - 只在测试和开发环境显示 */}
+              {!isProductionEnvironment() && (
+                <button 
+                  className="btn-secondary" 
+                    onClick={() => {
+                      console.log('强制测试按钮被点击');
+                      const chatUrl = '/chat?userid=10000001&uid=test_user_001';
+                      console.log('准备跳转到:', chatUrl);
+                      window.history.pushState({}, '', chatUrl);
+                      console.log('URL已设置，当前URL:', window.location.href);
+                      handleNavigate('chat');
+                      console.log('handleNavigate已调用');
+                    }}
+                  style={{ marginTop: '10px', backgroundColor: '#ff6b6b' }}
+                >
+                  强制测试聊天 (调试用)
+                </button>
+              )}
               
               {isApiTestAvailable() && (
                 <button 
@@ -223,9 +225,12 @@ function AppContent() {
                     handleNavigate('chat');
                     console.log('handleNavigate已调用');
                   }}
-                  style={{ marginTop: '10px', backgroundColor: '#28a745' }}
+                  style={{ 
+                    marginTop: '10px', 
+                    backgroundColor: isProductionEnvironment() ? '#007bff' : '#28a745' 
+                  }}
                 >
-                  测试聊天 (爱丽丝)
+                  {isProductionEnvironment() ? '体验聊天 (爱丽丝)' : '测试聊天 (爱丽丝)'}
                 </button>
               )}
             </div>
