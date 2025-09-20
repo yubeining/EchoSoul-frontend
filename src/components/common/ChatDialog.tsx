@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, memo } from 'react';
 import '../../styles/components/ChatDialog.css';
 import { useChat, ChatMessageUI, ChatUser } from '../../hooks/useChat';
 
@@ -11,7 +11,7 @@ interface ChatDialogProps {
   isPageMode?: boolean; // 新增：是否为页面模式
 }
 
-const ChatDialog: React.FC<ChatDialogProps> = ({
+const ChatDialog: React.FC<ChatDialogProps> = memo(({
   user,
   conversationId,
   onSendMessage,
@@ -44,11 +44,14 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
   useEffect(() => {
     if (user) {
       console.log('🔍 ChatDialog设置对方用户信息:', user);
-      setOtherUserInfo({
-        id: parseInt(user.id),
-        nickname: user.nickname,
-        avatar: user.avatar
-      });
+      const userId = parseInt(user.id);
+      if (!isNaN(userId)) {
+        setOtherUserInfo({
+          id: userId,
+          nickname: user.nickname,
+          avatar: user.avatar
+        });
+      }
     }
   }, [user, setOtherUserInfo]);
 
@@ -68,7 +71,7 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
         try {
           console.log('🔄 开始获取消息列表，conversationId:', conversationId);
           await fetchMessages(conversationId);
-          console.log('✅ 消息获取完成，currentMessages:', currentMessages);
+          console.log('✅ 消息获取完成');
           setMessagesLoaded(true);
         } catch (error) {
           console.error('❌ 获取消息失败，使用模拟数据:', error);
@@ -77,28 +80,28 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
             {
               id: '1',
               content: '你好!很高兴认识你',
-              senderId: '2', // 对方用户ID
+              senderId: '2',
               senderName: '对方',
               senderAvatar: user.avatar || '',
-              timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(), // 5分钟前
+              timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(),
               type: 'text'
             },
             {
               id: '2',
-              content: '你好' + user.nickname + '!我也很高兴认识你',
-              senderId: '1', // 当前用户ID
+              content: `你好${user.nickname}!我也很高兴认识你`,
+              senderId: '1',
               senderName: '我',
               senderAvatar: '',
-              timestamp: new Date(Date.now() - 3 * 60 * 1000).toISOString(), // 3分钟前
+              timestamp: new Date(Date.now() - 3 * 60 * 1000).toISOString(),
               type: 'text'
             },
             {
               id: '3',
               content: '你在做什么工作呢?',
-              senderId: '2', // 对方用户ID
+              senderId: '2',
               senderName: '对方',
               senderAvatar: user.avatar || '',
-              timestamp: new Date(Date.now() - 1 * 60 * 1000).toISOString(), // 1分钟前
+              timestamp: new Date(Date.now() - 1 * 60 * 1000).toISOString(),
               type: 'text'
             }
           ];
@@ -111,7 +114,7 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
       
       loadMessages();
     }
-  }, [conversationId, isOpen, fetchMessages, user.avatar, user.id, user.nickname, messagesLoaded, currentMessages]);
+  }, [conversationId, isOpen, fetchMessages, messagesLoaded, user.avatar, user.nickname]);
 
   useEffect(() => {
     scrollToBottom();
@@ -294,6 +297,8 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
       </div>
     </div>
   );
-};
+});
+
+ChatDialog.displayName = 'ChatDialog';
 
 export default ChatDialog;

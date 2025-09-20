@@ -46,19 +46,15 @@ export interface ChatMessageUI {
   replyToMessageId?: string;
 }
 
-// 全局状态，避免多个组件重复调用
-let globalConversations: Conversation[] = [];
-let globalLoading = false;
-let globalError: string | null = null;
-let globalInitialized = false;
+// 移除全局状态，使用组件内部状态管理
 
 export const useChat = () => {
   const { user } = useAuth();
-  const [conversations, setConversations] = useState<Conversation[]>(globalConversations);
+  const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
   const [currentMessages, setCurrentMessages] = useState<ChatMessageUI[]>([]);
-  const [loading, setLoading] = useState(globalLoading);
-  const [error, setError] = useState<string | null>(globalError);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [otherUser, setOtherUser] = useState<{ id: number; nickname: string; avatar?: string } | null>(null);
 
   // 获取会话列表（按需调用）
@@ -68,18 +64,7 @@ export const useChat = () => {
       return;
     }
     
-    // 如果已经加载过且没有错误，直接返回
-    if (globalInitialized && globalConversations.length > 0 && !globalError) {
-      console.log('📋 会话列表已缓存，直接使用');
-      setConversations(globalConversations);
-      return;
-    }
-    
     console.log('📋 开始获取会话列表...');
-    globalLoading = true;
-    globalError = null;
-    globalInitialized = true;
-    
     setLoading(true);
     setError(null);
     
@@ -88,21 +73,16 @@ export const useChat = () => {
       console.log('📋 获取会话列表响应:', response);
       if (response.code === 200 || response.code === 1) {
         console.log('✅ 设置会话列表:', response.data);
-        globalConversations = response.data;
-        globalError = null;
         setConversations(response.data);
-        setError(null); // 确保清除错误状态
+        setError(null);
       } else {
         throw new Error(response.msg || '获取会话列表失败');
       }
     } catch (err) {
       console.error('❌ 获取会话列表失败:', err);
       const errorMessage = err instanceof Error ? err.message : '获取会话列表失败';
-      globalError = errorMessage;
-      globalInitialized = false; // 失败时重置状态，允许重试
       setError(errorMessage);
     } finally {
-      globalLoading = false;
       setLoading(false);
     }
   }, [user]);
@@ -149,7 +129,7 @@ export const useChat = () => {
   // 将后端消息格式转换为UI消息格式
   const convertToUIMessage = useCallback((message: ChatMessage): ChatMessageUI => {
     // 判断是否为当前用户发送的消息
-    const isCurrentUser = user && message.sender_id === Number(user.id);
+    const isCurrentUser = user && message.sender_id === user.id;
     
     console.log('🔄 转换消息:', {
       messageId: message.message_id,
@@ -373,8 +353,7 @@ export const useChat = () => {
     setOtherUser(userInfo);
   }, []);
 
-  // 移除自动初始化，改为按需加载
-  // 会话列表将在用户主动访问聊天相关功能时才加载
+  // 按需加载会话列表，避免不必要的API调用
 
   return {
     // 状态

@@ -113,8 +113,13 @@ const ChatPage: React.FC<ChatPageProps> = ({
           // 如果有用户ID，直接获取用户信息并创建会话
           try {
             console.log('获取用户ID:', chatUserId);
+            // 验证用户ID是否为有效数字
+            const userId = parseInt(chatUserId);
+            if (isNaN(userId)) {
+              throw new Error('无效的用户ID格式');
+            }
             // 直接根据用户ID获取用户信息
-            const response = await userApi.getUserById(parseInt(chatUserId));
+            const response = await userApi.getUserById(userId);
             console.log('用户信息响应:', response);
             
             if (response.code === 200 || response.code === 1) {
@@ -172,7 +177,7 @@ const ChatPage: React.FC<ChatPageProps> = ({
     };
 
     initializeChat();
-  }, [chatUserId, conversationId, chatUserUid, user, getOrCreateConversation]);
+  }, [chatUserId, conversationId, chatUserUid, user, getOrCreateConversation, setOtherUserInfo]);
 
   // 发送消息处理（现在由ChatDialog组件内部处理）
   const handleSendMessage = (content: string) => {
