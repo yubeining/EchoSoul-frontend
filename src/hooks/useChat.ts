@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { chatApi, userApi, Conversation, ChatMessage } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 
@@ -59,11 +59,23 @@ export const useChat = () => {
   const [currentMessages, setCurrentMessages] = useState<ChatMessageUI[]>([]);
   const [loading, setLoading] = useState(globalLoading);
   const [error, setError] = useState<string | null>(globalError);
+  const [otherUser, setOtherUser] = useState<{ id: number; nickname: string; avatar?: string } | null>(null);
 
-  // 获取会话列表
+  // 获取会话列表（按需调用）
   const fetchConversations = useCallback(async () => {
-    if (!user || globalInitialized) return; // 使用全局状态防止重复调用
+    if (!user) {
+      console.log('⚠️ 用户未登录，跳过获取会话列表');
+      return;
+    }
     
+    // 如果已经加载过且没有错误，直接返回
+    if (globalInitialized && globalConversations.length > 0 && !globalError) {
+      console.log('📋 会话列表已缓存，直接使用');
+      setConversations(globalConversations);
+      return;
+    }
+    
+    console.log('📋 开始获取会话列表...');
     globalLoading = true;
     globalError = null;
     globalInitialized = true;
@@ -136,11 +148,23 @@ export const useChat = () => {
 
   // 将后端消息格式转换为UI消息格式
   const convertToUIMessage = useCallback((message: ChatMessage): ChatMessageUI => {
+    // 判断是否为当前用户发送的消息
+    const isCurrentUser = user && message.sender_id === Number(user.id);
+    
+    console.log('🔄 转换消息:', {
+      messageId: message.message_id,
+      senderId: message.sender_id,
+      currentUserId: user?.id,
+      isCurrentUser,
+      content: message.content,
+      otherUser: otherUser
+    });
+    
     return {
       id: message.message_id,
       senderId: message.sender_id.toString(),
-      senderName: '', // 需要从用户信息中获取
-      senderAvatar: '', // 需要从用户信息中获取
+      senderName: isCurrentUser ? '我' : (otherUser?.nickname || '对方'), // 使用对方真实昵称
+      senderAvatar: isCurrentUser ? '' : (otherUser?.avatar || ''), // 使用对方真实头像
       content: message.content,
       timestamp: message.create_time,
       type: message.message_type,
@@ -149,7 +173,7 @@ export const useChat = () => {
       fileSize: message.file_size || undefined,
       replyToMessageId: message.reply_to_message_id || undefined
     };
-  }, []);
+  }, [user, otherUser]);
 
   // 获取会话消息
   const fetchMessages = useCallback(async (conversationId: string, page: number = 1, limit: number = 50) => {
@@ -158,11 +182,57 @@ export const useChat = () => {
     
     try {
       const response = await chatApi.getMessages(conversationId, page, limit);
-      console.log('fetchMessages 响应:', response);
+      console.log('🔍 fetchMessages 原始响应:', response);
+      console.log('🔍 响应数据结构:', {
+        code: response.code,
+        msg: response.msg,
+        dataType: typeof response.data,
+        dataLength: Array.isArray(response.data) ? response.data.length : 'not array',
+        data: response.data
+      });
+      
       if (response.code === 200 || response.code === 1) {
-        const messages = response.data.map(convertToUIMessage);
-        setCurrentMessages(messages);
-        return messages;
+        // 检查响应数据结构
+        console.log('🔍 消息响应数据结构:', {
+          dataType: typeof response.data,
+          isArray: Array.isArray(response.data),
+          data: response.data
+        });
+        
+        // 根据实际数据结构获取消息数组
+        let messagesArray: ChatMessage[] = [];
+        if (Array.isArray(response.data)) {
+          messagesArray = response.data;
+        } else if (response.data && typeof response.data === 'object') {
+          // 使用类型断言来处理可能的对象结构
+          const dataObj = response.data as any;
+          if (Array.isArray(dataObj.messages)) {
+            messagesArray = dataObj.messages;
+          } else if (Array.isArray(dataObj.data)) {
+            messagesArray = dataObj.data;
+          } else {
+            console.warn('⚠️ 无法从响应对象中提取消息数组，使用空数组');
+            messagesArray = [];
+          }
+        } else {
+          console.warn('⚠️ 无法从响应中提取消息数组，使用空数组');
+          messagesArray = [];
+        }
+        
+        // 转换消息格式并按时间排序
+        const messages = messagesArray.map(convertToUIMessage);
+        console.log('🔄 转换后的消息:', messages);
+        
+        // 按时间顺序排序（从早到晚）
+        const sortedMessages = messages.sort((a, b) => {
+          const timeA = new Date(a.timestamp).getTime();
+          const timeB = new Date(b.timestamp).getTime();
+          return timeA - timeB;
+        });
+        
+        console.log('✅ 排序后的消息列表:', sortedMessages);
+        setCurrentMessages(sortedMessages);
+        return sortedMessages;
       } else {
         throw new Error(response.msg || '获取消息失败');
       }
@@ -297,12 +367,14 @@ export const useChat = () => {
     setCurrentMessages([]);
   }, []);
 
-  // 初始化时获取会话列表（只执行一次）
-  useEffect(() => {
-    if (user && !globalInitialized) {
-      fetchConversations();
-    }
-  }, [user, fetchConversations]);
+  // 设置对方用户信息
+  const setOtherUserInfo = useCallback((userInfo: { id: number; nickname: string; avatar?: string }) => {
+    console.log('🔍 设置对方用户信息:', userInfo);
+    setOtherUser(userInfo);
+  }, []);
+
+  // 移除自动初始化，改为按需加载
+  // 会话列表将在用户主动访问聊天相关功能时才加载
 
   return {
     // 状态
@@ -311,6 +383,7 @@ export const useChat = () => {
     currentMessages,
     loading,
     error,
+    otherUser,
     
     // 方法
     fetchConversations,
@@ -319,6 +392,7 @@ export const useChat = () => {
     sendMessage,
     getChatHistory,
     clearCurrentChat,
+    setOtherUserInfo,
     
     // 工具方法
     convertToUIMessage,

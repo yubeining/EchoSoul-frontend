@@ -23,42 +23,70 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
   const [messages, setMessages] = useState<ChatMessageUI[]>([]);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
+  const [messagesLoaded, setMessagesLoaded] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   
-  const { fetchMessages, sendMessage } = useChat();
+  const { fetchMessages, sendMessage, currentMessages, setOtherUserInfo } = useChat();
 
   // 自动滚动到底部
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
+  // 重置消息加载状态当conversationId改变时
+  useEffect(() => {
+    setMessagesLoaded(false);
+    setMessages([]);
+  }, [conversationId]);
+
+  // 设置对方用户信息
+  useEffect(() => {
+    if (user) {
+      console.log('🔍 ChatDialog设置对方用户信息:', user);
+      setOtherUserInfo({
+        id: parseInt(user.id),
+        nickname: user.nickname,
+        avatar: user.avatar
+      });
+    }
+  }, [user, setOtherUserInfo]);
+
+  // 监听currentMessages的变化，同步到本地messages状态
+  useEffect(() => {
+    if (currentMessages.length > 0) {
+      console.log('🔄 同步currentMessages到本地messages:', currentMessages);
+      setMessages(currentMessages);
+    }
+  }, [currentMessages]);
+
   // 获取消息列表
   useEffect(() => {
-    if (conversationId && isOpen) {
+    if (conversationId && isOpen && !messagesLoaded) {
       const loadMessages = async () => {
         setLoading(true);
         try {
-          const fetchedMessages = await fetchMessages(conversationId);
-          console.log('获取到的消息:', fetchedMessages);
-          setMessages(fetchedMessages);
+          console.log('🔄 开始获取消息列表，conversationId:', conversationId);
+          await fetchMessages(conversationId);
+          console.log('✅ 消息获取完成，currentMessages:', currentMessages);
+          setMessagesLoaded(true);
         } catch (error) {
-          console.error('获取消息失败，使用模拟数据:', error);
+          console.error('❌ 获取消息失败，使用模拟数据:', error);
           // 使用模拟消息数据作为备用
           const mockMessages: ChatMessageUI[] = [
             {
               id: '1',
               content: '你好!很高兴认识你',
-              senderId: user.id,
-              senderName: user.nickname,
-              senderAvatar: user.avatar,
+              senderId: '2', // 对方用户ID
+              senderName: '对方',
+              senderAvatar: user.avatar || '',
               timestamp: new Date(Date.now() - 5 * 60 * 1000).toISOString(), // 5分钟前
               type: 'text'
             },
             {
               id: '2',
               content: '你好' + user.nickname + '!我也很高兴认识你',
-              senderId: 'current_user',
+              senderId: '1', // 当前用户ID
               senderName: '我',
               senderAvatar: '',
               timestamp: new Date(Date.now() - 3 * 60 * 1000).toISOString(), // 3分钟前
@@ -67,14 +95,15 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
             {
               id: '3',
               content: '你在做什么工作呢?',
-              senderId: user.id,
-              senderName: user.nickname,
-              senderAvatar: user.avatar,
+              senderId: '2', // 对方用户ID
+              senderName: '对方',
+              senderAvatar: user.avatar || '',
               timestamp: new Date(Date.now() - 1 * 60 * 1000).toISOString(), // 1分钟前
               type: 'text'
             }
           ];
           setMessages(mockMessages);
+          setMessagesLoaded(true);
         } finally {
           setLoading(false);
         }
@@ -82,7 +111,7 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
       
       loadMessages();
     }
-  }, [conversationId, isOpen, fetchMessages, user.avatar, user.id, user.nickname]);
+  }, [conversationId, isOpen, fetchMessages, user.avatar, user.id, user.nickname, messagesLoaded, currentMessages]);
 
   useEffect(() => {
     scrollToBottom();
@@ -185,7 +214,7 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
           </div>
         </div>
         <button className="chat-close-btn" onClick={onClose}>
-          →
+          ▶
         </button>
       </div>
 
@@ -196,9 +225,15 @@ const ChatDialog: React.FC<ChatDialogProps> = ({
             <div className="loading-spinner"></div>
             <div className="loading-text">加载消息中...</div>
           </div>
+        ) : messages.length === 0 ? (
+          <div className="chat-empty">
+            <div className="empty-icon">💬</div>
+            <div className="empty-text">还没有消息，开始聊天吧！</div>
+          </div>
         ) : (
           messages.map((message, index) => {
-            const isCurrentUser = message.senderId === 'current_user';
+            // 判断是否为当前用户发送的消息
+            const isCurrentUser = message.senderName === '我';
             const showDate = index === 0 || 
               formatDate(message.timestamp) !== formatDate(messages[index - 1].timestamp);
 

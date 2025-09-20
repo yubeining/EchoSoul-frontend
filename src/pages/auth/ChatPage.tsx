@@ -4,7 +4,7 @@ import Navigation from '../../components/layout/Navigation';
 import ChatDialog from '../../components/common/ChatDialog';
 import { useChat, ChatUser } from '../../hooks/useChat';
 import { useAuth } from '../../contexts/AuthContext';
-import { userApi, chatApi, Conversation } from '../../services/api';
+import { userApi } from '../../services/api';
 
 interface ChatPageProps {
   onNavigate: (page: string) => void;
@@ -12,6 +12,7 @@ interface ChatPageProps {
   onLanguageChange: (language: string) => void;
   chatUserId?: string; // 从URL参数获取的用户ID
   conversationId?: string; // 从URL参数获取的会话ID
+  chatUserUid?: string; // 从URL参数获取的用户UID
 }
 
 const ChatPage: React.FC<ChatPageProps> = ({ 
@@ -19,19 +20,30 @@ const ChatPage: React.FC<ChatPageProps> = ({
   language, 
   onLanguageChange,
   chatUserId,
-  conversationId 
+  conversationId,
+  chatUserUid
 }) => {
   const [currentChatUser, setCurrentChatUser] = useState<ChatUser | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
   const { user } = useAuth();
-  const { getOrCreateConversation } = useChat();
+  const { getOrCreateConversation, setOtherUserInfo } = useChat();
 
   // 初始化聊天
   useEffect(() => {
     const initializeChat = async () => {
+      console.log('🚀 ChatPage 初始化，参数:', { chatUserId, conversationId, chatUserUid, user: user?.id });
+      console.log('🔍 当前URL:', window.location.href);
+      console.log('🔍 URL参数解析:', {
+        search: window.location.search,
+        chatUserUid: chatUserUid,
+        conversationId: conversationId,
+        chatUserId: chatUserId
+      });
+      
       if (!user) {
+        console.log('⚠️ 用户未登录，跳过初始化');
         setLoading(false);
         return;
       }
@@ -40,87 +52,80 @@ const ChatPage: React.FC<ChatPageProps> = ({
         setLoading(true);
         setError(null);
 
-        if (conversationId) {
-          // 如果有会话ID，从会话列表中查找对应的会话
+        // 优先使用UID获取用户信息
+        if (chatUserUid) {
           try {
-            console.log('查找会话ID:', conversationId);
+            console.log('使用UID获取用户信息:', chatUserUid);
+            const response = await userApi.getUserByUid(chatUserUid);
+            console.log('根据UID获取用户信息响应:', response);
             
-            // 先获取会话列表，然后从中找到对应的会话
-            const conversationsResponse = await chatApi.getConversations();
-            if (conversationsResponse.code === 200 || conversationsResponse.code === 1) {
-              // 直接使用data，因为API返回的data就是Conversation[]类型
-              const conversations = conversationsResponse.data;
-              console.log('获取到的会话列表:', conversations);
-              
-              // 查找匹配的会话
-              const conversation = conversations.find((conv: Conversation) => conv.conversation_id === conversationId);
-              if (conversation) {
-                console.log('找到匹配的会话:', conversation);
-                
-                // 确定对方用户ID（当前用户不是user1就是user2）
-                const otherUserId = conversation.user1_id === user?.id ? conversation.user2_id : conversation.user1_id;
-                console.log('对方用户ID:', otherUserId);
-                
-                // 获取对方用户信息
-                try {
-                  const userResponse = await userApi.searchUsers(`user_id:${otherUserId}`, 1, 1);
-                  console.log('用户搜索响应:', userResponse);
-                  
-                  if (userResponse.code === 200 && userResponse.data.users && userResponse.data.users.length > 0) {
-                    const targetUser = userResponse.data.users[0];
-                    console.log('获取到对方用户信息:', targetUser);
-                    
-                    const chatUser: ChatUser = {
-                      id: targetUser.id.toString(),
-                      username: targetUser.username,
-                      nickname: targetUser.nickname,
-                      avatar: targetUser.avatar,
-                      status: 'online'
-                    };
-                    setCurrentChatUser(chatUser);
-                  } else {
-                    throw new Error('用户信息获取失败');
-                  }
-                } catch (userError) {
-                  console.warn('获取用户信息失败，使用模拟数据:', userError);
-                  // 使用模拟数据作为备用
-                  const mockUser: ChatUser = {
-                    id: otherUserId.toString(),
-                    username: `user_${otherUserId}`,
-                    nickname: conversation.conversation_name || `用户${otherUserId}`,
-                    avatar: `https://api.dicebear.com/7.x/avataaars/svg?seed=${otherUserId}`,
-                    status: 'online'
-                  };
-                  setCurrentChatUser(mockUser);
-                }
-              } else {
-                console.error('未找到匹配的会话，conversationId:', conversationId);
-                setError('未找到指定的会话');
-              }
-            } else {
-              setError('获取会话列表失败');
-            }
-          } catch (err) {
-            console.error('获取会话详情失败:', err);
-            setError('获取会话详情失败');
-          }
-        } else if (chatUserId) {
-          // 如果有用户ID，搜索用户并创建会话
-          try {
-            console.log('搜索用户ID:', chatUserId);
-            // 使用user_id:前缀来搜索特定用户ID
-            const response = await userApi.searchUsers(`user_id:${chatUserId}`, 1, 1);
-            console.log('用户搜索响应:', response);
-            
-            if (response.code === 200 && response.data.users && response.data.users.length > 0) {
-              const targetUser = response.data.users[0];
+            if (response.code === 200 || response.code === 1) {
+              const targetUser = response.data.user;
               console.log('找到目标用户:', targetUser);
               
               const chatUser: ChatUser = {
                 id: targetUser.id.toString(),
                 username: targetUser.username,
                 nickname: targetUser.nickname,
-                avatar: targetUser.avatar,
+                avatar: targetUser.avatar || undefined,
+                status: 'online'
+              };
+              
+              setCurrentChatUser(chatUser);
+              
+              // 设置对方用户信息到useChat hook中
+              setOtherUserInfo({
+                id: targetUser.id,
+                nickname: targetUser.nickname,
+                avatar: targetUser.avatar || undefined
+              });
+              
+              console.log('UID模式初始化完成，用户信息已加载');
+            } else {
+              throw new Error(response.msg || '获取用户信息失败');
+            }
+          } catch (err) {
+            console.error('根据UID获取用户信息失败:', err);
+            setError('获取用户信息失败');
+          }
+        } else if (conversationId) {
+          // 如果有会话ID，直接使用它来初始化聊天
+          try {
+            console.log('使用会话ID初始化聊天:', conversationId);
+            
+            // 由于我们有会话ID，可以直接创建一个临时的ChatUser对象
+            // 实际的用户信息会在ChatDialog组件中通过消息获取来推断
+            const tempChatUser: ChatUser = {
+              id: 'unknown',
+              username: 'Loading...',
+              nickname: '正在加载...',
+              avatar: undefined,
+              status: 'online'
+            };
+            setCurrentChatUser(tempChatUser);
+            
+            console.log('会话ID模式初始化完成，等待ChatDialog组件加载消息');
+          } catch (err) {
+            console.error('初始化聊天失败:', err);
+            setError('初始化聊天失败');
+          }
+        } else if (chatUserId) {
+          // 如果有用户ID，直接获取用户信息并创建会话
+          try {
+            console.log('获取用户ID:', chatUserId);
+            // 直接根据用户ID获取用户信息
+            const response = await userApi.getUserById(parseInt(chatUserId));
+            console.log('用户信息响应:', response);
+            
+            if (response.code === 200 || response.code === 1) {
+              const targetUser = response.data;
+              console.log('找到目标用户:', targetUser);
+              
+              const chatUser: ChatUser = {
+                id: targetUser.id.toString(),
+                username: targetUser.username,
+                nickname: targetUser.nickname,
+                avatar: targetUser.avatar || undefined,
                 status: 'offline'
               };
               
@@ -167,7 +172,7 @@ const ChatPage: React.FC<ChatPageProps> = ({
     };
 
     initializeChat();
-  }, [chatUserId, conversationId, user, getOrCreateConversation]);
+  }, [chatUserId, conversationId, chatUserUid, user, getOrCreateConversation]);
 
   // 发送消息处理（现在由ChatDialog组件内部处理）
   const handleSendMessage = (content: string) => {
@@ -285,7 +290,7 @@ const ChatPage: React.FC<ChatPageProps> = ({
                   
                   {/* 角色信息 */}
                   <div className="character-info">
-                    <div className="character-name">爱丽丝</div>
+                    <div className="character-name">{currentChatUser?.nickname || '正在加载...'}</div>
                     <div className="character-status">在线 • 正在聊天</div>
                   </div>
                 </div>

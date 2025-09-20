@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import '../../styles/pages/DocsPage.css';
 import Navigation from '../../components/layout/Navigation';
-import { autoTranslate } from '../../utils/translation';
 
 // 中文原文内容 - 只需要维护中文版本，其他语言自动翻译
 const chineseContent = {
@@ -96,10 +95,15 @@ const DocsPage: React.FC<DocsPageProps> = ({ onNavigate, language, onLanguageCha
     return () => window.removeEventListener('scroll', handleScroll);
   }, []);
 
-  // 智能翻译函数 - 根据当前语言自动翻译
+  // 简单的翻译函数 - 直接返回中文内容
   const t = (key: keyof typeof chineseContent): string => {
-    const chineseText = chineseContent[key];
-    return autoTranslate(chineseText, language as 'zh' | 'en' | 'ja');
+    return chineseContent[key];
+  };
+
+  // 简单的文本翻译函数
+  const translateText = (text: string): string => {
+    // 直接返回原文，如果需要翻译可以集成第三方服务
+    return text;
   };
 
   const docSections = [
@@ -208,10 +212,10 @@ const DocsPage: React.FC<DocsPageProps> = ({ onNavigate, language, onLanguageCha
             <section id="systemOverview" className="content-section">
               <h2 className="section-title">{t('systemOverview')}</h2>
               <p className="section-content">
-                {autoTranslate('EchoSoul AI Platform 是一款多模态AI人格化系统，融合自然语言处理、计算机视觉、语音识别与情感计算技术，构建具有独特个性和情感理解能力的智能交互伙伴，为用户提供更加人性化、个性化的AI体验。', language as 'zh' | 'en' | 'ja')}
+                {translateText('EchoSoul AI Platform 是一款多模态AI人格化系统，融合自然语言处理、计算机视觉、语音识别与情感计算技术，构建具有独特个性和情感理解能力的智能交互伙伴，为用户提供更加人性化、个性化的AI体验。')}
               </p>
               <p className="section-content">
-                {autoTranslate('系统采用先进的深度学习架构，支持多种模态的输入输出，能够理解用户的意图、情感和上下文，提供智能化的对话服务和个性化推荐。', language as 'en' | 'ja')}
+                {translateText('系统采用先进的深度学习架构，支持多种模态的输入输出，能够理解用户的意图、情感和上下文，提供智能化的对话服务和个性化推荐。')}
               </p>
             </section>
 
@@ -219,20 +223,20 @@ const DocsPage: React.FC<DocsPageProps> = ({ onNavigate, language, onLanguageCha
               <h2 className="section-title">{t('coreFeatures')}</h2>
               <div className="feature-list">
                 <div className="feature-item">
-                  <h3>{autoTranslate('高级自然语言处理', language as 'en' | 'ja')}</h3>
-                  <p>{autoTranslate('利用最先进的自然语言处理模型，实现上下文理解、情感分析和智能对话流，并支持多语言。', language as 'en' | 'ja')}</p>
+                  <h3>{translateText('高级自然语言处理')}</h3>
+                  <p>{translateText('利用最先进的自然语言处理模型，实现上下文理解、情感分析和智能对话流，并支持多语言。')}</p>
                 </div>
                 <div className="feature-item">
-                  <h3>{autoTranslate('多模态交互', language as 'en' | 'ja')}</h3>
-                  <p>{autoTranslate('支持文本、语音、图像和视频输入，实现不同通信渠道的无缝集成和实时处理能力。', language as 'en' | 'ja')}</p>
+                  <h3>{translateText('多模态交互')}</h3>
+                  <p>{translateText('支持文本、语音、图像和视频输入，实现不同通信渠道的无缝集成和实时处理能力。')}</p>
                 </div>
                 <div className="feature-item">
-                  <h3>{autoTranslate('主动式交互', language as 'en' | 'ja')}</h3>
-                  <p>{autoTranslate('基于用户行为模式、上下文感知和智能调度，实现AI驱动的主动式沟通，提供最佳用户体验和参与度。', language as 'en' | 'ja')}</p>
+                  <h3>{translateText('主动式交互')}</h3>
+                  <p>{translateText('基于用户行为模式、上下文感知和智能调度，实现AI驱动的主动式沟通，提供最佳用户体验和参与度。')}</p>
                 </div>
                 <div className="feature-item">
-                  <h3>{autoTranslate('持久化记忆系统', language as 'en' | 'ja')}</h3>
-                  <p>{autoTranslate('先进的记忆架构，维护长期上下文、用户偏好和会话历史，实现个性化和持续的跨会话交互。', language as 'en' | 'ja')}</p>
+                  <h3>{translateText('持久化记忆系统')}</h3>
+                  <p>{translateText('先进的记忆架构，维护长期上下文、用户偏好和会话历史，实现个性化和持续的跨会话交互。')}</p>
                 </div>
               </div>
             </section>
@@ -242,23 +246,23 @@ const DocsPage: React.FC<DocsPageProps> = ({ onNavigate, language, onLanguageCha
               <div className="advantages-grid">
                 <div className="advantage-card">
                   <div className="advantage-icon">🚀</div>
-                  <h3>{autoTranslate('高性能', language as 'en' | 'ja')}</h3>
-                  <p>{autoTranslate('采用分布式架构，支持大规模并发处理，响应速度快，稳定性高。', language as 'en' | 'ja')}</p>
+                  <h3>{translateText('高性能')}</h3>
+                  <p>{translateText('采用分布式架构，支持大规模并发处理，响应速度快，稳定性高。')}</p>
                 </div>
                 <div className="advantage-card">
                   <div className="advantage-icon">🔒</div>
-                  <h3>{autoTranslate('安全可靠', language as 'en' | 'ja')}</h3>
-                  <p>{autoTranslate('企业级安全防护，数据加密传输，隐私保护机制完善。', language as 'en' | 'ja')}</p>
+                  <h3>{translateText('安全可靠')}</h3>
+                  <p>{translateText('企业级安全防护，数据加密传输，隐私保护机制完善。')}</p>
                 </div>
                 <div className="advantage-card">
                   <div className="advantage-icon">🔧</div>
-                  <h3>{autoTranslate('易于集成', language as 'en' | 'ja')}</h3>
-                  <p>{autoTranslate('提供丰富的API接口，支持多种开发语言，快速集成到现有系统。', language as 'en' | 'ja')}</p>
+                  <h3>{translateText('易于集成')}</h3>
+                  <p>{translateText('提供丰富的API接口，支持多种开发语言，快速集成到现有系统。')}</p>
                 </div>
                 <div className="advantage-card">
                   <div className="advantage-icon">📈</div>
-                  <h3>{autoTranslate('可扩展', language as 'en' | 'ja')}</h3>
-                  <p>{autoTranslate('模块化设计，支持水平扩展，可根据业务需求灵活调整。', language as 'en' | 'ja')}</p>
+                  <h3>{translateText('可扩展')}</h3>
+                  <p>{translateText('模块化设计，支持水平扩展，可根据业务需求灵活调整。')}</p>
                 </div>
               </div>
             </section>

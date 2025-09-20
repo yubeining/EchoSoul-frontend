@@ -157,7 +157,7 @@ class ApiClient {
         const response = await fetch(url, {
           ...config,
           mode: 'cors', // 启用CORS
-          credentials: 'omit', // 不发送cookies
+          credentials: 'include', // 发送cookies和认证信息
           cache: 'no-cache', // 禁用缓存
           headers: {
             ...config.headers,
@@ -325,6 +325,44 @@ export const userApi = {
         throw new Error(error.message || '搜索失败，请稍后重试');
       }
     }
+  },
+
+  // 根据用户ID获取用户信息
+  async getUserById(userId: number): Promise<ApiResponse<UserInfo>> {
+    try {
+      console.log('🔍 根据用户ID获取用户信息:', userId);
+      const response = await apiClient.get(`/api/users/${userId}`) as ApiResponse<UserInfo>;
+      console.log('✅ 获取用户信息成功:', response);
+      return response;
+    } catch (error: any) {
+      console.error('❌ 根据用户ID获取用户信息失败:', error);
+      throw new Error(error.message || '获取用户信息失败');
+    }
+  },
+
+  // 根据用户UID获取用户信息（用于聊天页面显示用户资料）
+  async getUserByUid(uid: string): Promise<ApiResponse<{ user: UserInfo }>> {
+    try {
+      console.log('🔍 根据用户UID获取用户信息:', uid);
+      console.log('🔍 请求URL:', `/api/users/profile/${uid}`);
+      const response = await apiClient.get(`/api/users/profile/${uid}`) as ApiResponse<{ user: UserInfo }>;
+      console.log('✅ 根据UID获取用户信息成功:', response);
+      console.log('🔍 响应数据结构:', {
+        code: response.code,
+        msg: response.msg,
+        dataType: typeof response.data,
+        userData: response.data
+      });
+      return response;
+    } catch (error: any) {
+      console.error('❌ 根据用户UID获取用户信息失败:', error);
+      console.error('❌ 错误详情:', {
+        message: error.message,
+        status: error.status,
+        stack: error.stack
+      });
+      throw new Error(error.message || '获取用户信息失败');
+    }
   }
 };
 
@@ -393,9 +431,25 @@ export const chatApi = {
   },
 
   // 获取用户会话列表
-  async getConversations(): Promise<ApiResponse<Conversation[]>> {
+  async getConversations(user1Id?: number, user2Id?: number): Promise<ApiResponse<Conversation[]>> {
     try {
-      const response = await apiClient.get('/api/chat/conversations') as ApiResponse<Conversation[]>;
+      let url = '/api/chat/conversations';
+      const params = new URLSearchParams();
+      
+      // 如果传入了用户ID，则添加查询参数
+      if (user1Id !== undefined) {
+        params.append('user1_id', user1Id.toString());
+      }
+      if (user2Id !== undefined) {
+        params.append('user2_id', user2Id.toString());
+      }
+      
+      if (params.toString()) {
+        url += `?${params.toString()}`;
+      }
+      
+      console.log('🔍 获取会话列表请求:', { user1Id, user2Id, url });
+      const response = await apiClient.get(url) as ApiResponse<Conversation[]>;
       console.log('✅ 获取会话列表成功:', response);
       
       // 检查响应状态码
@@ -407,6 +461,35 @@ export const chatApi = {
     } catch (error: any) {
       console.error('❌ 获取会话列表失败:', error);
       throw new Error(error.message || '获取会话列表失败');
+    }
+  },
+
+  // 根据两个用户ID获取会话
+  async getConversationByUsers(user1Id: number, user2Id: number): Promise<ApiResponse<Conversation>> {
+    try {
+      console.log('🔍 获取两个用户之间的会话:', { user1Id, user2Id });
+      const response = await apiClient.get(`/api/chat/conversations?user1_id=${user1Id}&user2_id=${user2Id}`) as ApiResponse<Conversation[]>;
+      
+      console.log('✅ 获取会话响应:', response);
+      
+      if (response.code === 200 || response.code === 1) {
+        const conversations = response.data;
+        if (conversations && conversations.length > 0) {
+          // 返回第一个匹配的会话
+          return {
+            code: response.code,
+            msg: response.msg,
+            data: conversations[0]
+          };
+        } else {
+          throw new Error('未找到两个用户之间的会话');
+        }
+      } else {
+        throw new Error(response.msg || '获取会话失败');
+      }
+    } catch (error: any) {
+      console.error('❌ 获取两个用户之间的会话失败:', error);
+      throw new Error(error.message || '获取会话失败');
     }
   },
 

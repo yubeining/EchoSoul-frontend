@@ -70,8 +70,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
       console.log('getOrCreateConversation 返回结果:', conversation);
       if (conversation) {
         console.log('会话创建成功:', conversation);
-        // 跳转到聊天页面，传递会话ID参数
-        const chatUrl = `/chat?conversationId=${conversation.conversation_id}`;
+        // 跳转到聊天页面，传递会话ID和用户UID参数
+        const chatUrl = `/chat?conversationId=${conversation.conversation_id}&uid=${targetUser.uid}`;
         console.log('准备跳转到:', chatUrl);
         
         // 先设置URL，再调用导航

@@ -11,8 +11,14 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
   onChatClick,
   onNewChat
 }) => {
-  const { getChatHistory, loading, error, conversations } = useChat();
+  const { getChatHistory, loading, error, conversations, fetchConversations } = useChat();
   const [chatList, setChatList] = useState<ChatHistoryItem[]>([]);
+
+  // 组件挂载时主动获取会话列表
+  useEffect(() => {
+    console.log('📋 ChatHistory组件挂载，开始获取会话列表');
+    fetchConversations();
+  }, [fetchConversations]);
 
   // 当会话列表更新时，获取聊天历史
   useEffect(() => {

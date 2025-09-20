@@ -118,12 +118,14 @@ function AppContent() {
           const urlParams = new URLSearchParams(window.location.search);
           const chatUserId = urlParams.get('userId') || urlParams.get('userid');
           const conversationId = urlParams.get('conversationId');
+          const chatUserUid = urlParams.get('uid');
           
           return (
             <ChatPage 
               {...commonProps}
               chatUserId={chatUserId || undefined}
               conversationId={conversationId || undefined}
+              chatUserUid={chatUserUid || undefined}
             />
           );
         } else {
@@ -187,7 +189,7 @@ function AppContent() {
                 className="btn-secondary" 
                   onClick={() => {
                     console.log('强制测试按钮被点击');
-                    const chatUrl = '/chat?userid=10000001';
+                    const chatUrl = '/chat?userid=10000001&uid=test_user_001';
                     console.log('准备跳转到:', chatUrl);
                     window.history.pushState({}, '', chatUrl);
                     console.log('URL已设置，当前URL:', window.location.href);
@@ -214,7 +216,7 @@ function AppContent() {
                   className="btn-secondary" 
                   onClick={() => {
                     console.log('测试聊天按钮被点击');
-                    const chatUrl = '/chat?userid=10000001';
+                    const chatUrl = '/chat?userid=10000001&uid=test_user_001';
                     console.log('准备跳转到:', chatUrl);
                     window.history.pushState({}, '', chatUrl);
                     console.log('URL已设置，当前URL:', window.location.href);

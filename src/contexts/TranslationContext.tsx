@@ -1,5 +1,4 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { autoTranslate } from '../utils/translation';
 
 // 翻译键类型定义
 export type TranslationKeys = 
@@ -245,7 +244,9 @@ export const TranslationProvider: React.FC<TranslationProviderProps> = ({ childr
 
   // 智能翻译函数
   const translateText = (text: string): string => {
-    return autoTranslate(text, language as 'zh' | 'en' | 'ja');
+    // 简单的翻译实现，直接返回原文
+    // 如果需要更复杂的翻译，可以集成第三方翻译服务
+    return text;
   };
 
   const value: TranslationContextType = {
