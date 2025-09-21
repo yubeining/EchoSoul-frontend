@@ -5,6 +5,7 @@ import Navigation from '../../components/layout/Navigation';
 import ChangePasswordModal from '../../components/common/ChangePasswordModal';
 import UserSearchResult from '../../components/common/UserSearchResult';
 import ChatHistory from '../../components/common/ChatHistory';
+import Live2DCharacter from '../../components/live2d/Live2DCharacter';
 import { useAuth } from '../../contexts/AuthContext';
 import { useUserSearch, UserSearchResult as UserSearchResultType } from '../../hooks/useUserSearch';
 import { useChat } from '../../hooks/useChat';
@@ -76,6 +77,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
         case 'dashboard-ai-library':
           setActiveMenu('aiLibrary');
           break;
+        case 'dashboard-live2d-test':
+          setActiveMenu('live2dTest');
+          break;
         default:
           setActiveMenu('home');
       }
@@ -83,7 +87,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
       // 兼容旧的URL参数方式
       const urlParams = new URLSearchParams(window.location.search);
       const menu = urlParams.get('menu');
-      if (menu && ['home', 'messages', 'chat', 'profile', 'findUsers', 'createAI', 'aiLibrary'].includes(menu)) {
+      if (menu && ['home', 'messages', 'chat', 'profile', 'findUsers', 'createAI', 'aiLibrary', 'live2dTest'].includes(menu)) {
         setActiveMenu(menu);
       }
     }
@@ -120,7 +124,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
       'profile': 'dashboard-profile',
       'findUsers': 'dashboard-find-users',
       'createAI': 'dashboard-create-ai',
-      'aiLibrary': 'dashboard-ai-library'
+      'aiLibrary': 'dashboard-ai-library',
+      'live2dTest': 'dashboard-live2d-test'
     };
     
     const routeKey = routeMap[menu];
@@ -352,6 +357,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
       findUsers: '查找用户',
       createAI: '创建AI角色',
       aiLibrary: 'AI角色库',
+      live2dTest: 'Live2D角色测试',
       welcome: '欢迎使用 EchoSoul AI Platform',
       overview: '系统概述',
       overviewContent: 'EchoSoul AI Platform 是一个多模态AI人格化系统，融合自然语言处理、计算机视觉、语音识别与情感计算技术，构建具有独特个性和情感理解能力的智能交互伙伴，为用户提供更加人性化、个性化的AI体验。系统采用先进的深度学习架构，支持多种输入输出模态，能够理解用户意图、情感和上下文，提供智能对话服务和个性化推荐。',
@@ -380,6 +386,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
       findUsers: 'Find Users',
       createAI: 'Create AI Character',
       aiLibrary: 'AI Character Library',
+      live2dTest: 'Live2D Character Test',
       welcome: 'Welcome to EchoSoul AI Platform',
       overview: 'System Overview',
       overviewContent: 'EchoSoul AI Platform is a multimodal AI personalization system that integrates natural language processing, computer vision, speech recognition, and emotional computing technologies to build intelligent interactive partners with unique personalities and emotional understanding capabilities, providing users with a more humanized and personalized AI experience. The system uses advanced deep learning architecture, supports various input/output modalities, understands user intent, emotion, and context, and provides intelligent dialogue services and personalized recommendations.',
@@ -408,6 +415,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
       findUsers: 'ユーザー検索',
       createAI: 'AIキャラクター作成',
       aiLibrary: 'AIキャラクターライブラリ',
+      live2dTest: 'Live2Dキャラクターテスト',
       welcome: 'EchoSoul AI Platform へようこそ',
       overview: 'システム概要',
       overviewContent: 'EchoSoul AI Platform は、自然言語処理、コンピュータビジョン、音声認識、感情計算技術を統合し、独特な個性と感情理解能力を持つ知的インタラクティブパートナーを構築し、ユーザーにより人間的で個性的なAI体験を提供するマルチモーダルAI人格化システムです。システムは先進的な深層学習アーキテクチャを使用し、様々な入出力モダリティをサポートし、ユーザーの意図、感情、文脈を理解し、知的対話サービスと個性化された推奨を提供します。',
@@ -1031,6 +1039,13 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
             )}
           </div>
         );
+      case 'live2dTest':
+        return (
+          <div className="dashboard-content">
+            <h1 className="dashboard-title">Live2D角色测试</h1>
+            <Live2DCharacter />
+          </div>
+        );
       default:
         return null;
     }
@@ -1101,6 +1116,13 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
           >
             <span className="menu-icon">📚</span>
             <span className="menu-text">{t.aiLibrary}</span>
+          </button>
+          <button 
+            className={`menu-item ${activeMenu === 'live2dTest' ? 'active' : ''}`}
+            onClick={() => handleMenuClick('live2dTest')}
+          >
+            <span className="menu-icon">🎭</span>
+            <span className="menu-text">{t.live2dTest}</span>
           </button>
           </nav>
         </div>

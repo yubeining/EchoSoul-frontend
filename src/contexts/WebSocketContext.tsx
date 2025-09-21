@@ -167,13 +167,14 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
   // 监听用户登录状态变化
   useEffect(() => {
     if (user && token) {
-      // 用户登录，尝试连接WebSocket
-      connect();
+      // 用户登录，但不自动连接WebSocket
+      // WebSocket连接将在需要时手动触发（如进入聊天页面）
+      console.log('✅ 用户已登录，WebSocket将在需要时连接');
     } else {
       // 用户登出，断开WebSocket连接
       disconnect();
     }
-  }, [user, token, connect, disconnect]);
+  }, [user, token, disconnect]);
 
   // 监听WebSocket连接状态变化
   useEffect(() => {

@@ -26,6 +26,7 @@ const ROUTES = {
   'dashboard-find-users': '/dashboard/find-users',
   'dashboard-create-ai': '/dashboard/create-ai',
   'dashboard-ai-library': '/dashboard/ai-library',
+  'dashboard-live2d-test': '/dashboard/live2d-test',
   chat: '/chat',
   'api-test': '/api-test',
   home: '/'
@@ -99,6 +100,9 @@ function AppContent() {
           case 'ai-library':
             setCurrentPage('dashboard-ai-library');
             break;
+          case 'live2d-test':
+            setCurrentPage('dashboard-live2d-test');
+            break;
           default:
             setCurrentPage('dashboard');
         }
@@ -154,6 +158,7 @@ function AppContent() {
       case 'dashboard-find-users':
       case 'dashboard-create-ai':
       case 'dashboard-ai-library':
+      case 'dashboard-live2d-test':
         return <DashboardPage {...commonProps} currentPage={currentPage} />;
       
       case 'chat':
@@ -161,7 +166,7 @@ function AppContent() {
           const urlParams = new URLSearchParams(window.location.search);
           const chatUserId = urlParams.get('userId') || urlParams.get('userid');
           const conversationId = urlParams.get('conversationId');
-          const chatUserUid = urlParams.get('uid');
+          const chatUserUid = urlParams.get('chatUserUid') || urlParams.get('uid');
           
           return (
             <ChatPage 

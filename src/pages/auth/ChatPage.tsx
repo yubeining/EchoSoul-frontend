@@ -4,7 +4,8 @@ import Navigation from '../../components/layout/Navigation';
 import ChatDialog from '../../components/common/ChatDialog';
 import { useChat, ChatUser } from '../../hooks/useChat';
 import { useAuth } from '../../contexts/AuthContext';
-import { userApi, aiCharacterApi } from '../../services/api';
+import { useWebSocket } from '../../contexts/WebSocketContext';
+import { userApi, aiCharacterApi, aiChatApi } from '../../services/api';
 
 interface ChatPageProps {
   onNavigate: (page: string) => void;
@@ -29,6 +30,25 @@ const ChatPage: React.FC<ChatPageProps> = ({
   
   const { user } = useAuth();
   const { getOrCreateConversation, setOtherUserInfo } = useChat();
+  const { connect: connectWebSocket, disconnect: disconnectWebSocket, isConnected } = useWebSocket();
+
+  // WebSocket连接管理
+  useEffect(() => {
+    if (user && !isConnected) {
+      console.log('🔌 进入聊天页面，建立WebSocket连接');
+      connectWebSocket().catch(error => {
+        console.error('❌ WebSocket连接失败:', error);
+      });
+    }
+
+    // 组件卸载时断开WebSocket连接
+    return () => {
+      if (isConnected) {
+        console.log('🔌 离开聊天页面，断开WebSocket连接');
+        disconnectWebSocket();
+      }
+    };
+  }, [user, isConnected, connectWebSocket, disconnectWebSocket]);
 
   // 初始化聊天
   useEffect(() => {
@@ -41,6 +61,7 @@ const ChatPage: React.FC<ChatPageProps> = ({
         conversationId: conversationId,
         chatUserId: chatUserId
       });
+      console.log('🔄 useEffect 执行时间:', new Date().toISOString());
       
       if (!user) {
         console.log('⚠️ 用户未登录，跳过初始化');
@@ -124,12 +145,49 @@ const ChatPage: React.FC<ChatPageProps> = ({
           setError('获取信息失败');
         }
         } else if (conversationId) {
-          // 如果有会话ID，直接使用它来初始化聊天
+          // 如果有会话ID，需要先获取角色ID才能调用API
+          if (!chatUserUid) {
+            console.error('缺少角色ID，无法获取会话信息');
+            setError('缺少角色ID');
+            return;
+          }
+          
           try {
-            console.log('使用会话ID初始化聊天:', conversationId);
+            console.log('使用会话ID和角色ID初始化聊天:', { conversationId, chatUserUid });
             
-            // 由于我们有会话ID，可以直接创建一个临时的ChatUser对象
-            // 实际的用户信息会在ChatDialog组件中通过消息获取来推断
+            // 调用API获取会话信息和角色信息
+            const response = await aiChatApi.createAIConversation({ character_id: chatUserUid });
+            console.log('获取会话信息响应:', response);
+            
+            if (response.code === 1 && response.data) {
+              const { character_info } = response.data;
+              console.log('获取到角色信息:', character_info);
+              
+              // 使用真实的角色信息创建ChatUser对象
+              const chatUser: ChatUser = {
+                id: character_info.character_id,
+                username: character_info.name,
+                nickname: character_info.nickname,
+                avatar: character_info.avatar || undefined,
+                status: 'online'
+              };
+              
+              setCurrentChatUser(chatUser);
+              
+              // 设置AI角色信息到useChat hook中
+              setOtherUserInfo({
+                id: character_info.id,
+                nickname: character_info.nickname,
+                avatar: character_info.avatar || undefined
+              });
+              
+              console.log('会话ID模式初始化完成，角色信息已加载');
+            } else {
+              throw new Error(response.msg || '获取会话信息失败');
+            }
+          } catch (err) {
+            console.error('获取会话信息失败:', err);
+            // 如果获取失败，使用临时数据
             const tempChatUser: ChatUser = {
               id: 'unknown',
               username: 'Loading...',
@@ -138,11 +196,7 @@ const ChatPage: React.FC<ChatPageProps> = ({
               status: 'online'
             };
             setCurrentChatUser(tempChatUser);
-            
-            console.log('会话ID模式初始化完成，等待ChatDialog组件加载消息');
-          } catch (err) {
-            console.error('初始化聊天失败:', err);
-            setError('初始化聊天失败');
+            setError('获取会话信息失败');
           }
         } else if (chatUserId) {
           // 如果有用户ID，直接获取用户信息并创建会话
@@ -212,7 +266,8 @@ const ChatPage: React.FC<ChatPageProps> = ({
     };
 
     initializeChat();
-  }, [chatUserId, conversationId, chatUserUid, user, getOrCreateConversation, setOtherUserInfo]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [chatUserId, conversationId, chatUserUid, user]);
 
   // 发送消息处理（现在由ChatDialog组件内部处理）
   const handleSendMessage = (content: string) => {

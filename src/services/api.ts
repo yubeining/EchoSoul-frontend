@@ -129,6 +129,17 @@ export interface AIConversationResponse {
     name: string;
     nickname: string;
     avatar: string | null;
+    description: string;
+    personality: string;
+    background_story: string;
+    speaking_style: string;
+    creator_id: number;
+    is_public: boolean;
+    status: number;
+    usage_count: number;
+    like_count: number;
+    create_time: string;
+    update_time: string;
   };
   message: string;
 }
