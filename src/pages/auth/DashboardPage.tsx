@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import '../../styles/pages/DashboardPage.css';
+import '../../styles/pages/AICharacterCreation.css';
 import Navigation from '../../components/layout/Navigation';
 import ChangePasswordModal from '../../components/common/ChangePasswordModal';
 import UserSearchResult from '../../components/common/UserSearchResult';
@@ -671,99 +672,139 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
       case 'createAI':
         return (
           <div className="dashboard-content">
-            <h1 className="dashboard-title">创建AI角色</h1>
+            <div className="ai-creation-header">
+              <h1 className="ai-creation-title">创建AI角色</h1>
+              <span className="ai-creation-divider">•</span>
+              <p className="ai-creation-subtitle">设计一个独特的AI角色，让它成为你的智能助手</p>
+            </div>
             
             <div className="ai-character-creation">
               <div className="creation-form">
                 <div className="form-section">
-                  <h3 className="section-title">基本信息</h3>
-                  <div className="form-group">
-                    <label className="form-label">角色名称 *</label>
-                    <input 
-                      type="text" 
-                      className="form-input" 
-                      placeholder="请输入AI角色的名称"
-                      value={aiCharacterForm.name}
-                      onChange={(e) => handleAICharacterFormChange('name', e.target.value)}
-                    />
+                  <div className="section-header">
+                    <div className="section-icon">📝</div>
+                    <h3 className="section-title">基本信息</h3>
                   </div>
-                  <div className="form-group">
-                    <label className="form-label">角色昵称 *</label>
-                    <input 
-                      type="text" 
-                      className="form-input" 
-                      placeholder="请输入AI角色的昵称"
-                      value={aiCharacterForm.nickname}
-                      onChange={(e) => handleAICharacterFormChange('nickname', e.target.value)}
-                    />
+                  <div className="form-grid">
+                    <div className="form-group">
+                      <label className="form-label">
+                        角色名称 <span className="required">*</span>
+                      </label>
+                      <div className="input-wrapper">
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          placeholder="给你的AI角色起个名字"
+                          value={aiCharacterForm.name}
+                          onChange={(e) => handleAICharacterFormChange('name', e.target.value)}
+                        />
+                      </div>
+                    </div>
+                    <div className="form-group">
+                      <label className="form-label">
+                        角色昵称 <span className="required">*</span>
+                      </label>
+                      <div className="input-wrapper">
+                        <input 
+                          type="text" 
+                          className="form-input" 
+                          placeholder="用户会如何称呼这个角色"
+                          value={aiCharacterForm.nickname}
+                          onChange={(e) => handleAICharacterFormChange('nickname', e.target.value)}
+                        />
+                      </div>
+                    </div>
                   </div>
                   <div className="form-group">
                     <label className="form-label">角色描述</label>
-                    <textarea 
-                      className="form-textarea" 
-                      placeholder="请描述AI角色的基本信息和特点"
-                      rows={4}
-                      value={aiCharacterForm.description}
-                      onChange={(e) => handleAICharacterFormChange('description', e.target.value)}
-                    ></textarea>
+                    <div className="textarea-wrapper">
+                      <textarea 
+                        className="form-textarea" 
+                        placeholder="描述这个AI角色的基本信息、特点和能力..."
+                        rows={4}
+                        value={aiCharacterForm.description}
+                        onChange={(e) => handleAICharacterFormChange('description', e.target.value)}
+                      ></textarea>
+                      <div className="char-count">{aiCharacterForm.description.length}/500</div>
+                    </div>
                   </div>
                 </div>
                 
                 <div className="form-section">
-                  <h3 className="section-title">人设设定</h3>
+                  <div className="section-header">
+                    <div className="section-icon">🎭</div>
+                    <h3 className="section-title">人设设定</h3>
+                  </div>
                   <div className="form-group">
                     <label className="form-label">性格特点</label>
-                    <input 
-                      type="text" 
-                      className="form-input" 
-                      placeholder="例如：温柔、幽默、专业"
-                      value={aiCharacterForm.personality}
-                      onChange={(e) => handleAICharacterFormChange('personality', e.target.value)}
-                    />
+                    <div className="input-wrapper">
+                      <input 
+                        type="text" 
+                        className="form-input" 
+                        placeholder="例如：温柔、幽默、专业、活泼"
+                        value={aiCharacterForm.personality}
+                        onChange={(e) => handleAICharacterFormChange('personality', e.target.value)}
+                      />
+                    </div>
+                    <div className="form-hint">用逗号分隔多个特点</div>
                   </div>
                   <div className="form-group">
                     <label className="form-label">背景故事</label>
-                    <textarea 
-                      className="form-textarea" 
-                      placeholder="请描述AI角色的背景故事和经历"
-                      rows={3}
-                      value={aiCharacterForm.background_story}
-                      onChange={(e) => handleAICharacterFormChange('background_story', e.target.value)}
-                    ></textarea>
+                    <div className="textarea-wrapper">
+                      <textarea 
+                        className="form-textarea" 
+                        placeholder="讲述这个AI角色的背景故事、经历和成长历程..."
+                        rows={4}
+                        value={aiCharacterForm.background_story}
+                        onChange={(e) => handleAICharacterFormChange('background_story', e.target.value)}
+                      ></textarea>
+                      <div className="char-count">{aiCharacterForm.background_story.length}/1000</div>
+                    </div>
                   </div>
                   <div className="form-group">
                     <label className="form-label">对话风格</label>
-                    <select 
-                      className="form-select"
-                      value={aiCharacterForm.speaking_style}
-                      onChange={(e) => handleAICharacterFormChange('speaking_style', e.target.value)}
-                    >
-                      <option value="">请选择对话风格</option>
-                      <option value="formal">正式</option>
-                      <option value="casual">随意</option>
-                      <option value="friendly">友好</option>
-                      <option value="professional">专业</option>
-                    </select>
+                    <div className="select-wrapper">
+                      <select 
+                        className="form-select"
+                        value={aiCharacterForm.speaking_style}
+                        onChange={(e) => handleAICharacterFormChange('speaking_style', e.target.value)}
+                      >
+                        <option value="">选择对话风格</option>
+                        <option value="formal">正式严谨</option>
+                        <option value="casual">轻松随意</option>
+                        <option value="friendly">友好亲切</option>
+                        <option value="professional">专业高效</option>
+                        <option value="humorous">幽默风趣</option>
+                        <option value="caring">关怀体贴</option>
+                      </select>
+                      <div className="select-arrow">▼</div>
+                    </div>
                   </div>
                 </div>
                 
                 <div className="form-section">
-                  <h3 className="section-title">外观设置</h3>
+                  <div className="section-header">
+                    <div className="section-icon">🎨</div>
+                    <h3 className="section-title">外观设置</h3>
+                  </div>
                   <div className="form-group">
                     <label className="form-label">头像URL</label>
-                    <input 
-                      type="url" 
-                      className="form-input" 
-                      placeholder="请输入头像图片URL（可选）"
-                      value={aiCharacterForm.avatar}
-                      onChange={(e) => handleAICharacterFormChange('avatar', e.target.value)}
-                    />
+                    <div className="input-wrapper">
+                      <input 
+                        type="url" 
+                        className="form-input" 
+                        placeholder="https://example.com/avatar.jpg"
+                        value={aiCharacterForm.avatar}
+                        onChange={(e) => handleAICharacterFormChange('avatar', e.target.value)}
+                      />
+                    </div>
+                    <div className="form-hint">支持 JPG、PNG、GIF 格式，建议尺寸 200x200 像素</div>
                     {aiCharacterForm.avatar && (
-                      <div className="avatar-preview" style={{ marginTop: '10px' }}>
+                      <div className="avatar-preview">
                         <img 
                           src={aiCharacterForm.avatar} 
                           alt="头像预览" 
-                          style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover' }}
+                          className="preview-avatar"
                           onError={(e) => {
                             e.currentTarget.style.display = 'none';
                           }}
@@ -772,109 +813,62 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                     )}
                   </div>
                   <div className="form-group">
-                    <label className="form-label">
-                      <input 
-                        type="checkbox" 
-                        checked={aiCharacterForm.is_public}
-                        onChange={(e) => handleAICharacterFormChange('is_public', e.target.checked)}
-                        style={{ marginRight: '8px' }}
-                      />
-                      公开此角色（其他用户可以搜索到）
-                    </label>
+                    <div className="checkbox-wrapper">
+                      <label className="checkbox-label">
+                        <input 
+                          type="checkbox" 
+                          className="form-checkbox"
+                          checked={aiCharacterForm.is_public}
+                          onChange={(e) => handleAICharacterFormChange('is_public', e.target.checked)}
+                        />
+                        <span className="checkbox-custom"></span>
+                        <span className="checkbox-text">公开此角色</span>
+                      </label>
+                      <div className="checkbox-hint">其他用户可以搜索并使用这个角色</div>
+                    </div>
                   </div>
                 </div>
                 
                 {/* 错误和成功消息显示 */}
                 {aiCreationError && (
-                  <div className="form-message error" style={{ color: '#e74c3c', marginBottom: '15px', padding: '10px', backgroundColor: '#fdf2f2', borderRadius: '4px' }}>
-                    {aiCreationError}
+                  <div className="form-message error">
+                    <div className="message-icon">⚠️</div>
+                    <div className="message-text">{aiCreationError}</div>
                   </div>
                 )}
                 {aiCreationSuccess && (
-                  <div className="form-message success" style={{ color: '#27ae60', marginBottom: '15px', padding: '10px', backgroundColor: '#f0f9f0', borderRadius: '4px' }}>
-                    {aiCreationSuccess}
+                  <div className="form-message success">
+                    <div className="message-icon">✅</div>
+                    <div className="message-text">{aiCreationSuccess}</div>
                   </div>
                 )}
                 
                 <div className="form-actions">
                   <button 
-                    className="btn-primary" 
+                    className="btn-create" 
                     onClick={handleCreateAICharacter}
                     disabled={isCreatingAI}
                   >
-                    {isCreatingAI ? '创建中...' : '创建AI角色'}
+                    {isCreatingAI ? (
+                      <>
+                        <div className="btn-spinner"></div>
+                        创建中...
+                      </>
+                    ) : (
+                      <>
+                        <span className="btn-icon">✨</span>
+                        创建AI角色
+                      </>
+                    )}
                   </button>
                   <button 
-                    className="btn-secondary" 
+                    className="btn-draft" 
                     onClick={handleSaveDraft}
                     disabled={isCreatingAI}
                   >
+                    <span className="btn-icon">💾</span>
                     保存草稿
                   </button>
-                </div>
-              </div>
-              
-              <div className="creation-preview">
-                <h3 className="preview-title">预览效果</h3>
-                <div className="preview-card">
-                  <div className="preview-avatar">
-                    {aiCharacterForm.avatar ? (
-                      <img 
-                        src={aiCharacterForm.avatar} 
-                        alt="头像预览" 
-                        style={{ width: '60px', height: '60px', borderRadius: '50%', objectFit: 'cover' }}
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                            (e.currentTarget.nextElementSibling as HTMLElement)!.style.display = 'block';
-                          }}
-                      />
-                    ) : null}
-                    <div style={{ display: aiCharacterForm.avatar ? 'none' : 'block' }}>🤖</div>
-                  </div>
-                  <div className="preview-info">
-                    <div className="preview-name">
-                      {aiCharacterForm.name || 'AI角色名称'}
-                    </div>
-                    <div className="preview-desc">
-                      {aiCharacterForm.description || '角色描述将在这里显示'}
-                    </div>
-                    {aiCharacterForm.personality && (
-                      <div className="preview-personality" style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
-                        性格：{aiCharacterForm.personality}
-                      </div>
-                    )}
-                    {aiCharacterForm.speaking_style && (
-                      <div className="preview-style" style={{ fontSize: '12px', color: '#666', marginTop: '2px' }}>
-                        风格：{aiCharacterForm.speaking_style}
-                      </div>
-                    )}
-                  </div>
-                </div>
-                <div className="preview-chat">
-                  <div className="chat-message ai-message">
-                    <div className="message-avatar">
-                      {aiCharacterForm.avatar ? (
-                        <img 
-                          src={aiCharacterForm.avatar} 
-                          alt="头像" 
-                          style={{ width: '32px', height: '32px', borderRadius: '50%', objectFit: 'cover' }}
-                          onError={(e) => {
-                            e.currentTarget.style.display = 'none';
-                            (e.currentTarget.nextElementSibling as HTMLElement)!.style.display = 'block';
-                          }}
-                        />
-                      ) : null}
-                      <div style={{ display: aiCharacterForm.avatar ? 'none' : 'block' }}>🤖</div>
-                    </div>
-                    <div className="message-content">
-                      你好！我是{aiCharacterForm.nickname || '你创建的AI角色'}，很高兴认识你！
-                      {aiCharacterForm.background_story && (
-                        <div style={{ fontSize: '12px', color: '#666', marginTop: '5px' }}>
-                          {aiCharacterForm.background_story.substring(0, 50)}...
-                        </div>
-                      )}
-                    </div>
-                  </div>
                 </div>
               </div>
             </div>

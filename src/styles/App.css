@@ -22,173 +22,7 @@ body {
   padding: 0 20px;
 }
 
-/* Navigation Styles */
-.navbar {
-  position: fixed;
-  top: 0;
-  left: 0;
-  right: 0;
-  background: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
-  z-index: 1000;
-  transition: all 0.3s ease;
-}
-
-.nav-container {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 0 20px;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  height: 70px;
-}
-
-/* Logo Section */
-.nav-logo {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-
-.ai-logo {
-  width: 32px;
-  height: 32px;
-  background: linear-gradient(135deg, #165DFF 0%, #8B5CF6 100%);
-  border-radius: 6px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: white;
-  font-weight: 700;
-  font-size: 14px;
-}
-
-.logo-text {
-  font-size: 16px;
-  font-weight: 600;
-  color: #333;
-}
-
-
-/* Right Section */
-.nav-right {
-  display: flex;
-  align-items: center;
-  gap: 24px;
-}
-
-.nav-link {
-  text-decoration: none;
-  color: #333;
-  font-weight: 500;
-  transition: color 0.3s ease;
-  background: none;
-  border: none;
-  cursor: pointer;
-  padding: 0;
-  font-size: inherit;
-}
-
-.nav-link:hover {
-  color: #165DFF;
-}
-
-.language-selector {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  cursor: pointer;
-  color: #333;
-  font-weight: 500;
-  position: relative;
-  padding: 6px 8px;
-  border-radius: 4px;
-  transition: background-color 0.2s ease;
-}
-
-.language-selector:hover {
-  background-color: #f5f7fa;
-  color: #165DFF;
-}
-
-.language-menu {
-  position: absolute;
-  top: calc(100% + 4px);
-  right: 0;
-  background: white;
-  border: 1px solid #e2e8f0;
-  border-radius: 6px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
-  padding: 4px 0;
-  min-width: 80px;
-  z-index: 1001;
-}
-
-.language-option {
-  padding: 8px 12px;
-  cursor: pointer;
-  transition: background-color 0.2s ease;
-  color: #333;
-  font-weight: 500;
-  font-size: 14px;
-  white-space: nowrap;
-}
-
-.language-option:hover {
-  background-color: #f5f7fa;
-}
-
-.language-option.active {
-  background-color: #165DFF;
-  color: white;
-}
-
-.globe-icon {
-  font-size: 16px;
-}
-
-.lang-text {
-  font-size: 13px;
-}
-
-
-.github-btn {
-  background: transparent;
-  color: #333;
-  border: none;
-  padding: 8px 12px;
-  border-radius: 6px;
-  font-weight: 500;
-  font-size: 16px;
-  cursor: pointer;
-  transition: all 0.2s ease;
-  display: flex;
-  align-items: center;
-  gap: 6px;
-}
-
-.github-btn:hover {
-  background-color: #f5f7fa;
-  color: #165DFF;
-}
-
-.github-icon {
-  width: 20px;
-  height: 20px;
-  transition: fill 0.2s ease;
-}
-
-.github-btn:hover .github-icon {
-  fill: #165DFF;
-}
-
-
-.chevron {
-  font-size: 10px;
-  color: #666;
-}
+/* Navigation styles are now handled by Navigation.css to avoid conflicts */
 
 /* Button Styles */
 .btn-primary {
@@ -556,17 +390,6 @@ body {
 }
 
 @media (max-width: 768px) {
-  .nav-container {
-    flex-direction: column;
-    height: auto;
-    padding: 16px 20px;
-    gap: 16px;
-  }
-  
-  
-  .nav-right {
-    gap: 16px;
-  }
   
   .hero-container {
     grid-template-columns: 1fr;
@@ -604,10 +427,6 @@ body {
 }
 
 @media (max-width: 480px) {
-  .nav-right {
-    flex-wrap: wrap;
-    gap: 12px;
-  }
   
   .hero-title {
     font-size: 2rem;
