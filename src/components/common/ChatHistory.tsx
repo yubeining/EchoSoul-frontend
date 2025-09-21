@@ -16,7 +16,6 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
 
   // 组件挂载时主动获取会话列表
   useEffect(() => {
-    console.log('📋 ChatHistory组件挂载，开始获取会话列表');
     fetchConversations();
   }, [fetchConversations]);
 

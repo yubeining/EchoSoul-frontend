@@ -182,7 +182,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
         is_public: aiCharacterForm.is_public
       };
 
-      console.log('准备创建AI角色:', requestData);
       const response = await aiCharacterApi.createCharacter(requestData);
       
       if (response.code === 1) {
@@ -225,11 +224,9 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
       setAiLibraryLoading(true);
       setAiLibraryError(null);
       
-      console.log('🤖 加载AI角色列表:', listType);
       const response = await aiCharacterApi.getCharacters(listType, 1, 20);
       
       if (response.code === 1) {
-        console.log('🤖 AI角色数据:', response.data.characters);
         setAiCharacters(response.data.characters);
         setAiLibraryType(listType);
       } else {
@@ -250,7 +247,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
     }
 
     try {
-      console.log('🤖 开始与AI角色聊天:', character);
       const response = await aiChatApi.createAIConversation({
         character_id: character.character_id
       });
@@ -277,33 +273,24 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
     }
     
     try {
-      console.log('开始创建会话，目标用户ID:', targetUser.id, '类型:', typeof targetUser.id);
       
       // 获取或创建会话
       const conversation = await getOrCreateConversation(targetUser.id);
-      console.log('getOrCreateConversation 返回结果:', conversation);
       if (conversation) {
-        console.log('会话创建成功:', conversation);
         // 跳转到聊天页面，传递会话ID和用户UID参数
         const chatUrl = `/chat?conversationId=${conversation.conversation_id}&uid=${targetUser.uid}`;
-        console.log('准备跳转到:', chatUrl);
         
         // 先设置URL，再调用导航
         window.history.pushState({}, '', chatUrl);
-        console.log('URL已设置，当前URL:', window.location.href);
         
         // 触发自定义路由变化事件
         window.dispatchEvent(new CustomEvent('routechange'));
-        console.log('自定义路由变化事件已触发');
         
         // 调用导航函数
         onNavigate('chat');
-        console.log('onNavigate("chat") 已调用');
         
         // 强制刷新页面状态
         setTimeout(() => {
-          console.log('延迟检查URL:', window.location.href);
-          console.log('延迟检查页面状态');
         }, 100);
       } else {
         console.error('会话创建失败，conversation为null');
@@ -938,11 +925,12 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                   </div>
                 ) : (
                   aiCharacters.map((character) => {
-                    console.log('🎭 渲染角色卡片:', { 
+                    // eslint-disable-next-line @typescript-eslint/no-unused-vars
+                    const characterInfo = {
                       name: character.name, 
                       nickname: character.nickname,
                       character_id: character.character_id 
-                    });
+                    };
                     return (
                     <div key={character.character_id} className="ai-character-card" style={{
                       border: '1px solid #e0e0e0',
@@ -1158,7 +1146,6 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
         onClose={() => setShowChangePasswordModal(false)}
         onSuccess={() => {
           // 密码修改成功后的回调
-          console.log('密码修改成功');
         }}
       />
     </div>

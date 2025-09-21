@@ -63,7 +63,6 @@ const ChatDialog: React.FC<ChatDialogProps> = memo(({
   // 设置对方用户信息
   useEffect(() => {
     if (user) {
-      console.log('🔍 ChatDialog设置对方用户信息:', user);
       const userId = parseInt(user.id);
       if (!isNaN(userId)) {
         setOtherUserInfo({
@@ -78,8 +77,6 @@ const ChatDialog: React.FC<ChatDialogProps> = memo(({
   // 监听currentMessages的变化，同步到本地messages状态
   useEffect(() => {
     if (currentMessages.length > 0) {
-      console.log('🔄 ChatDialog同步currentMessages到本地messages:', currentMessages.length, '条消息');
-      console.log('🔄 当前本地messages长度:', messages.length);
       setMessages(currentMessages);
     }
   }, [currentMessages, messages.length]);
@@ -90,9 +87,7 @@ const ChatDialog: React.FC<ChatDialogProps> = memo(({
       const loadMessages = async () => {
         setLoading(true);
         try {
-          console.log('🔄 开始获取消息列表，conversationId:', conversationId);
           await fetchMessages(conversationId);
-          console.log('✅ 消息获取完成');
           setMessagesLoaded(true);
         } catch (error) {
           console.error('❌ 获取消息失败，使用模拟数据:', error);

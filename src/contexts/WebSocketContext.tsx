@@ -70,7 +70,6 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
     }
 
     if (state.isConnected || state.isConnecting) {
-      console.log('🔌 WebSocket已连接或正在连接中');
       return;
     }
 
@@ -88,7 +87,6 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
         reconnectAttempts: 0
       }));
       
-      console.log('✅ WebSocket连接成功');
     } catch (error) {
       const errorMessage = error instanceof Error ? error.message : '连接失败';
       setState(prev => ({
@@ -111,7 +109,6 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       error: null,
       reconnectAttempts: 0
     });
-    console.log('🔌 WebSocket连接已断开');
   }, []);
 
   // 发送消息
@@ -169,7 +166,6 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
     if (user && token) {
       // 用户登录，但不自动连接WebSocket
       // WebSocket连接将在需要时手动触发（如进入聊天页面）
-      console.log('✅ 用户已登录，WebSocket将在需要时连接');
     } else {
       // 用户登出，断开WebSocket连接
       disconnect();

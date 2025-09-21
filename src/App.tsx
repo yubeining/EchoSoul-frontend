@@ -5,12 +5,10 @@ import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
 import DashboardPage from './pages/auth/DashboardPage';
 import ChatPage from './pages/auth/ChatPage';
-import ApiTestPage from './pages/auth/ApiTestPage';
 import Navigation from './components/layout/Navigation';
 import { AuthProvider } from './contexts/AuthContext';
 import { TranslationProvider } from './contexts/TranslationContext';
 import { WebSocketProvider } from './contexts/WebSocketContext';
-import { isApiTestAvailable, isChatTestAvailable, isProductionEnvironment } from './utils/environment';
 import { translations, TranslationKeys } from './data/translations';
 
 // 路由配置
@@ -28,7 +26,6 @@ const ROUTES = {
   'dashboard-ai-library': '/dashboard/ai-library',
   'dashboard-live2d-test': '/dashboard/live2d-test',
   chat: '/chat',
-  'api-test': '/api-test',
   home: '/'
 } as const;
 
@@ -43,7 +40,6 @@ function AppContent() {
   };
 
   const handleNavigate = (page: string) => {
-    console.log('handleNavigate 被调用，页面:', page, '当前URL:', window.location.href);
     const routeKey = page as RouteKey;
     setCurrentPage(routeKey);
     
@@ -52,24 +48,18 @@ function AppContent() {
     if (routeKey === 'chat') {
       // 保持当前的URL参数，包括conversationId
       const currentUrl = window.location.pathname + window.location.search;
-      console.log('chat页面路由，当前URL:', currentUrl);
       if (!currentUrl.includes('/chat')) {
         window.history.pushState({}, '', '/chat');
-        console.log('设置新的chat URL');
-      } else {
-        console.log('保持当前chat URL不变:', currentUrl);
       }
     } else if (targetPath) {
       window.history.pushState({}, '', targetPath);
     }
-    console.log('handleNavigate 完成，新页面状态:', routeKey);
   };
 
   // 监听URL变化
   useEffect(() => {
     const handlePopState = () => {
       const path = window.location.pathname;
-      console.log('URL变化检测到，当前路径:', path);
       
       // 根据路径设置当前页面
       const routeEntry = Object.entries(ROUTES).find(([_, routePath]) => routePath === path);
@@ -118,7 +108,6 @@ function AppContent() {
     
     // 添加自定义事件监听器，用于处理程序化的路由跳转
     const handleRouteChange = () => {
-      console.log('自定义路由变化事件触发');
       handlePopState();
     };
     
@@ -162,32 +151,19 @@ function AppContent() {
         return <DashboardPage {...commonProps} currentPage={currentPage} />;
       
       case 'chat':
-        if (isChatTestAvailable()) {
-          const urlParams = new URLSearchParams(window.location.search);
-          const chatUserId = urlParams.get('userId') || urlParams.get('userid');
-          const conversationId = urlParams.get('conversationId');
-          const chatUserUid = urlParams.get('chatUserUid') || urlParams.get('uid');
-          
-          return (
-            <ChatPage 
-              {...commonProps}
-              chatUserId={chatUserId || undefined}
-              conversationId={conversationId || undefined}
-              chatUserUid={chatUserUid || undefined}
-            />
-          );
-        } else {
-          handleNavigate('home');
-          return null;
-        }
-      
-      case 'api-test':
-        if (isApiTestAvailable()) {
-          return <ApiTestPage />;
-        } else {
-          handleNavigate('home');
-          return null;
-        }
+        const urlParams = new URLSearchParams(window.location.search);
+        const chatUserId = urlParams.get('userId') || urlParams.get('userid');
+        const conversationId = urlParams.get('conversationId');
+        const chatUserUid = urlParams.get('chatUserUid') || urlParams.get('uid');
+        
+        return (
+          <ChatPage 
+            {...commonProps}
+            chatUserId={chatUserId || undefined}
+            conversationId={conversationId || undefined}
+            chatUserUid={chatUserUid || undefined}
+          />
+        );
       
       default:
         return renderHomePage();
@@ -224,63 +200,9 @@ function AppContent() {
                 <div className="trial-pulse"></div>
               </button>
               
-              {/* 测试环境按钮 */}
-              {(() => {
-                console.log('环境检测 - API测试可用:', isApiTestAvailable());
-                console.log('环境检测 - 聊天测试可用:', isChatTestAvailable());
-                console.log('当前hostname:', window.location.hostname);
-                return null;
-              })()}
               
-              {/* 强制显示测试按钮用于调试 - 只在测试和开发环境显示 */}
-              {!isProductionEnvironment() && (
-                <button 
-                  className="btn-secondary" 
-                    onClick={() => {
-                      console.log('强制测试按钮被点击');
-                      const chatUrl = '/chat?userid=10000001&uid=test_user_001';
-                      console.log('准备跳转到:', chatUrl);
-                      window.history.pushState({}, '', chatUrl);
-                      console.log('URL已设置，当前URL:', window.location.href);
-                      handleNavigate('chat');
-                      console.log('handleNavigate已调用');
-                    }}
-                  style={{ marginTop: '10px', backgroundColor: '#ff6b6b' }}
-                >
-                  强制测试聊天 (调试用)
-                </button>
-              )}
               
-              {isApiTestAvailable() && (
-                <button 
-                  className="btn-secondary" 
-                  onClick={() => handleNavigate('api-test')}
-                  style={{ marginTop: '10px', backgroundColor: '#6f42c1' }}
-                >
-                  API 测试
-                </button>
-              )}
               
-              {isChatTestAvailable() && (
-                <button 
-                  className="btn-secondary" 
-                  onClick={() => {
-                    console.log('测试聊天按钮被点击');
-                    const chatUrl = '/chat?userid=10000001&uid=test_user_001';
-                    console.log('准备跳转到:', chatUrl);
-                    window.history.pushState({}, '', chatUrl);
-                    console.log('URL已设置，当前URL:', window.location.href);
-                    handleNavigate('chat');
-                    console.log('handleNavigate已调用');
-                  }}
-                  style={{ 
-                    marginTop: '10px', 
-                    backgroundColor: isProductionEnvironment() ? '#007bff' : '#28a745' 
-                  }}
-                >
-                  {isProductionEnvironment() ? '体验聊天 (爱丽丝)' : '测试聊天 (爱丽丝)'}
-                </button>
-              )}
             </div>
           </div>
           

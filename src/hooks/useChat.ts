@@ -78,7 +78,6 @@ export const useChat = () => {
 
     // 监听新消息
     const handleNewMessage = (data: any) => {
-      console.log('📨 收到新消息:', data);
       
       // 转换消息格式
       const newMessage: ChatMessageUI = {
@@ -109,15 +108,11 @@ export const useChat = () => {
               // 替换临时消息
               const updatedMessages = [...prev];
               updatedMessages[tempMessageIndex] = newMessage;
-              console.log('🔄 替换临时消息:', tempMessageIndex, newMessage);
-              console.log('🔄 替换前消息列表长度:', prev.length);
-              console.log('🔄 替换后消息列表长度:', updatedMessages.length);
               return updatedMessages;
             }
           }
           
           // 如果不是当前用户的消息，或者是当前用户消息但没有找到临时消息，直接添加
-          console.log('➕ 添加新消息:', newMessage);
           return [...prev, newMessage];
         });
       } else {
@@ -131,7 +126,6 @@ export const useChat = () => {
 
     // 监听响应消息
     const handleResponse = (data: any) => {
-      console.log('📨 收到响应:', data);
       
       if (data.original_type === 'get_history' && data.result.success) {
         // 处理历史消息
@@ -175,19 +169,15 @@ export const useChat = () => {
   // 获取会话列表（按需调用）
   const fetchConversations = useCallback(async () => {
     if (!user) {
-      console.log('⚠️ 用户未登录，跳过获取会话列表');
       return;
     }
     
-    console.log('📋 开始获取会话列表...');
     setLoading(true);
     setError(null);
     
     try {
       const response = await chatApi.getConversations();
-      console.log('📋 获取会话列表响应:', response);
       if (response.code === 200 || response.code === 1) {
-        console.log('✅ 设置会话列表:', response.data);
         setConversations(response.data);
         setError(null);
       } else {
@@ -211,7 +201,6 @@ export const useChat = () => {
     
     try {
       const response = await chatApi.getOrCreateConversation(otherUserId);
-      console.log('getOrCreateConversation 响应:', response);
       if (response.code === 200 || response.code === 1) {
         const conversation = response.data;
         setCurrentConversation(conversation);
@@ -246,15 +235,6 @@ export const useChat = () => {
     // 判断是否为当前用户发送的消息
     const isCurrentUser = user && message.sender_id === user.id;
     
-    console.log('🔄 转换消息:', {
-      messageId: message.message_id,
-      senderId: message.sender_id,
-      currentUserId: user?.id,
-      isCurrentUser,
-      content: message.content,
-      otherUser: otherUser
-    });
-    
     return {
       id: message.message_id,
       senderId: message.sender_id.toString(),
@@ -277,22 +257,8 @@ export const useChat = () => {
     
     try {
       const response = await chatApi.getMessages(conversationId, page, limit);
-      console.log('🔍 fetchMessages 原始响应:', response);
-      console.log('🔍 响应数据结构:', {
-        code: response.code,
-        msg: response.msg,
-        dataType: typeof response.data,
-        dataLength: Array.isArray(response.data) ? response.data.length : 'not array',
-        data: response.data
-      });
       
       if (response.code === 200 || response.code === 1) {
-        // 检查响应数据结构
-        console.log('🔍 消息响应数据结构:', {
-          dataType: typeof response.data,
-          isArray: Array.isArray(response.data),
-          data: response.data
-        });
         
         // 根据实际数据结构获取消息数组
         let messagesArray: ChatMessage[] = [];
@@ -316,7 +282,6 @@ export const useChat = () => {
         
         // 转换消息格式并按时间排序
         const messages = messagesArray.map(convertToUIMessage);
-        console.log('🔄 转换后的消息:', messages);
         
         // 按时间顺序排序（从早到晚）
         const sortedMessages = messages.sort((a, b) => {
@@ -325,7 +290,6 @@ export const useChat = () => {
           return timeA - timeB;
         });
         
-        console.log('✅ 排序后的消息列表:', sortedMessages);
         setCurrentMessages(sortedMessages);
         return sortedMessages;
       } else {
@@ -355,7 +319,6 @@ export const useChat = () => {
     // 优先使用WebSocket发送
     if (isConnected) {
       try {
-        console.log('📤 通过WebSocket发送消息');
         
         // 创建临时消息ID，用于后续替换
         const tempMessageId = `temp_${Date.now()}`;
@@ -372,11 +335,8 @@ export const useChat = () => {
         };
         
         // 立即显示发送的消息（乐观更新）
-        console.log('📤 添加临时消息到currentMessages:', tempMessage);
         setCurrentMessages(prev => {
-          console.log('📤 当前消息列表长度:', prev.length);
           const newMessages = [...prev, tempMessage];
-          console.log('📤 添加临时消息后长度:', newMessages.length);
           return newMessages;
         });
         
@@ -396,7 +356,6 @@ export const useChat = () => {
     
     // 回退到HTTP请求
     try {
-      console.log('📤 通过HTTP发送消息');
       const response = await chatApi.sendMessage(
         conversationId,
         content,
@@ -457,7 +416,6 @@ export const useChat = () => {
   const getChatHistory = useCallback(async (): Promise<ChatHistoryItem[]> => {
     if (!user) return [];
     
-    console.log('📋 开始获取聊天历史，会话数量:', conversations.length);
     const chatHistoryItems: ChatHistoryItem[] = [];
     
     for (const conv of conversations) {
@@ -508,7 +466,6 @@ export const useChat = () => {
 
   // 设置对方用户信息
   const setOtherUserInfo = useCallback((userInfo: { id: number; nickname: string; avatar?: string }) => {
-    console.log('🔍 设置对方用户信息:', userInfo);
     setOtherUser(userInfo);
   }, []);
 

@@ -236,7 +236,6 @@ const Live2DCharacter: React.FC<Live2DCharacterProps> = ({ className }) => {
 
   const triggerAnimation = (animation: string) => {
     // 这里可以实现更复杂的动画逻辑
-    console.log(`Playing animation: ${animation}`);
   };
 
   const startSpeaking = () => {

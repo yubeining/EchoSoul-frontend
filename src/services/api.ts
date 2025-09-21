@@ -239,7 +239,6 @@ class ApiClient {
     for (const baseUrl of API_BASE_URLS) {
       try {
         const url = `${baseUrl}${endpoint}`;
-        console.log(`🔄 尝试请求: ${url}`);
         
         const response = await fetch(url, {
           ...config,
@@ -276,7 +275,6 @@ class ApiClient {
         
         // 如果是CORS错误，不要将其作为最终错误
         if (error.name === 'TypeError' && error.message.includes('CORS')) {
-          console.log(`⚠️ CORS错误，跳过此地址: ${baseUrl}`);
           continue;
         }
         
@@ -417,9 +415,7 @@ export const userApi = {
   // 根据用户ID获取用户信息
   async getUserById(userId: number): Promise<ApiResponse<UserInfo>> {
     try {
-      console.log('🔍 根据用户ID获取用户信息:', userId);
       const response = await apiClient.get(`/api/users/${userId}`) as ApiResponse<UserInfo>;
-      console.log('✅ 获取用户信息成功:', response);
       return response;
     } catch (error: any) {
       console.error('❌ 根据用户ID获取用户信息失败:', error);
@@ -430,16 +426,7 @@ export const userApi = {
   // 根据用户UID获取用户信息（用于聊天页面显示用户资料）
   async getUserByUid(uid: string): Promise<ApiResponse<{ user: UserInfo }>> {
     try {
-      console.log('🔍 根据用户UID获取用户信息:', uid);
-      console.log('🔍 请求URL:', `/api/users/profile/${uid}`);
       const response = await apiClient.get(`/api/users/profile/${uid}`) as ApiResponse<{ user: UserInfo }>;
-      console.log('✅ 根据UID获取用户信息成功:', response);
-      console.log('🔍 响应数据结构:', {
-        code: response.code,
-        msg: response.msg,
-        dataType: typeof response.data,
-        userData: response.data
-      });
       return response;
     } catch (error: any) {
       console.error('❌ 根据用户UID获取用户信息失败:', error);
@@ -487,13 +474,11 @@ export const chatApi = {
   // 获取或创建会话
   async getOrCreateConversation(otherUserId: number): Promise<ApiResponse<Conversation>> {
     try {
-      console.log('发送会话创建请求，参数:', { other_user_id: otherUserId });
       
       const response = await apiClient.post('/api/chat/conversations/get-or-create', {
         target_user_id: otherUserId
       }) as ApiResponse<Conversation>;
       
-      console.log('会话创建响应:', response);
       return response;
     } catch (error: any) {
       console.error('获取或创建会话失败:', error);
@@ -535,9 +520,7 @@ export const chatApi = {
         url += `?${params.toString()}`;
       }
       
-      console.log('🔍 获取会话列表请求:', { user1Id, user2Id, url });
       const response = await apiClient.get(url) as ApiResponse<Conversation[]>;
-      console.log('✅ 获取会话列表成功:', response);
       
       // 检查响应状态码
       if (response.code === 200 || response.code === 1) {
@@ -554,10 +537,8 @@ export const chatApi = {
   // 根据两个用户ID获取会话
   async getConversationByUsers(user1Id: number, user2Id: number): Promise<ApiResponse<Conversation>> {
     try {
-      console.log('🔍 获取两个用户之间的会话:', { user1Id, user2Id });
       const response = await apiClient.get(`/api/chat/conversations?user1_id=${user1Id}&user2_id=${user2Id}`) as ApiResponse<Conversation[]>;
       
-      console.log('✅ 获取会话响应:', response);
       
       if (response.code === 200 || response.code === 1) {
         const conversations = response.data;
@@ -626,7 +607,6 @@ export const chatApi = {
         limit: limit.toString()
       });
       const response = await apiClient.get(`/api/chat/conversations/${conversationId}/messages?${params.toString()}`) as ApiResponse<ChatMessage[]>;
-      console.log('getMessages 响应:', response);
       
       // 检查响应状态码
       if (response.code === 200 || response.code === 1) {
@@ -646,9 +626,7 @@ export const aiCharacterApi = {
   // 创建AI角色
   async createCharacter(data: CreateAICharacterRequest): Promise<ApiResponse<CreateAICharacterResponse>> {
     try {
-      console.log('🤖 创建AI角色:', data);
       const response = await apiClient.post('/api/ai/characters', data) as ApiResponse<CreateAICharacterResponse>;
-      console.log('✅ 创建AI角色成功:', response);
       return response;
     } catch (error: any) {
       console.error('❌ 创建AI角色失败:', error);
@@ -659,9 +637,7 @@ export const aiCharacterApi = {
   // 获取AI角色列表
   async getCharacters(listType: 'public' | 'my' | 'favorited' = 'public', page: number = 1, limit: number = 20): Promise<ApiResponse<AICharacterListResponse>> {
     try {
-      console.log('🤖 获取AI角色列表:', { listType, page, limit });
       const response = await apiClient.get(`/api/ai/characters?list_type=${listType}&page=${page}&limit=${limit}`) as ApiResponse<AICharacterListResponse>;
-      console.log('✅ 获取AI角色列表成功:', response);
       return response;
     } catch (error: any) {
       console.error('❌ 获取AI角色列表失败:', error);
@@ -672,9 +648,7 @@ export const aiCharacterApi = {
   // 获取AI角色详情
   async getCharacterDetail(characterId: string): Promise<ApiResponse<AICharacterDetailResponse>> {
     try {
-      console.log('🤖 获取AI角色详情:', characterId);
       const response = await apiClient.get(`/api/ai/characters/${characterId}`) as ApiResponse<AICharacterDetailResponse>;
-      console.log('✅ 获取AI角色详情成功:', response);
       return response;
     } catch (error: any) {
       console.error('❌ 获取AI角色详情失败:', error);
@@ -685,9 +659,7 @@ export const aiCharacterApi = {
   // 更新AI角色
   async updateCharacter(characterId: string, data: UpdateAICharacterRequest): Promise<ApiResponse<{ message: string }>> {
     try {
-      console.log('🤖 更新AI角色:', { characterId, data });
       const response = await apiClient.put(`/api/ai/characters/${characterId}`, data) as ApiResponse<{ message: string }>;
-      console.log('✅ 更新AI角色成功:', response);
       return response;
     } catch (error: any) {
       console.error('❌ 更新AI角色失败:', error);
@@ -698,9 +670,7 @@ export const aiCharacterApi = {
   // 删除AI角色
   async deleteCharacter(characterId: string): Promise<ApiResponse<{ message: string }>> {
     try {
-      console.log('🤖 删除AI角色:', characterId);
       const response = await apiClient.delete(`/api/ai/characters/${characterId}`) as ApiResponse<{ message: string }>;
-      console.log('✅ 删除AI角色成功:', response);
       return response;
     } catch (error: any) {
       console.error('❌ 删除AI角色失败:', error);
@@ -711,9 +681,7 @@ export const aiCharacterApi = {
   // 收藏AI角色
   async favoriteCharacter(characterId: string): Promise<ApiResponse<{ message: string }>> {
     try {
-      console.log('🤖 收藏AI角色:', characterId);
       const response = await apiClient.post(`/api/ai/characters/${characterId}/favorite`) as ApiResponse<{ message: string }>;
-      console.log('✅ 收藏AI角色成功:', response);
       return response;
     } catch (error: any) {
       console.error('❌ 收藏AI角色失败:', error);
@@ -724,9 +692,7 @@ export const aiCharacterApi = {
   // 取消收藏AI角色
   async unfavoriteCharacter(characterId: string): Promise<ApiResponse<{ message: string }>> {
     try {
-      console.log('🤖 取消收藏AI角色:', characterId);
       const response = await apiClient.delete(`/api/ai/characters/${characterId}/favorite`) as ApiResponse<{ message: string }>;
-      console.log('✅ 取消收藏AI角色成功:', response);
       return response;
     } catch (error: any) {
       console.error('❌ 取消收藏AI角色失败:', error);
@@ -740,9 +706,7 @@ export const aiChatApi = {
   // 创建用户-AI会话
   async createAIConversation(data: CreateAIConversationRequest): Promise<ApiResponse<AIConversationResponse>> {
     try {
-      console.log('🤖 创建AI会话:', data);
       const response = await apiClient.post('/api/ai/conversations/ai', data) as ApiResponse<AIConversationResponse>;
-      console.log('✅ 创建AI会话成功:', response);
       return response;
     } catch (error: any) {
       console.error('❌ 创建AI会话失败:', error);
@@ -753,9 +717,7 @@ export const aiChatApi = {
   // 获取用户AI会话列表
   async getAIConversations(page: number = 1, limit: number = 20): Promise<ApiResponse<{ conversations: any[]; total: number; page: number; limit: number }>> {
     try {
-      console.log('🤖 获取AI会话列表:', { page, limit });
       const response = await apiClient.get(`/api/chat/conversations/ai?page=${page}&limit=${limit}`) as ApiResponse<{ conversations: any[]; total: number; page: number; limit: number }>;
-      console.log('✅ 获取AI会话列表成功:', response);
       return response;
     } catch (error: any) {
       console.error('❌ 获取AI会话列表失败:', error);
@@ -766,9 +728,7 @@ export const aiChatApi = {
   // 发送消息到AI角色
   async sendMessageToAI(conversationId: string, content: string): Promise<ApiResponse<any>> {
     try {
-      console.log('🤖 发送消息到AI:', { conversationId, content });
       const response = await apiClient.post(`/api/chat/messages/ai?conversation_id=${conversationId}&content=${encodeURIComponent(content)}`) as ApiResponse<any>;
-      console.log('✅ 发送消息到AI成功:', response);
       return response;
     } catch (error: any) {
       console.error('❌ 发送消息到AI失败:', error);
@@ -865,7 +825,6 @@ export const apiTester = {
           return await response.json();
         }
       } catch (error) {
-        console.log(`测试端点失败: ${baseUrl}${endpoint}`, error);
       }
     }
     

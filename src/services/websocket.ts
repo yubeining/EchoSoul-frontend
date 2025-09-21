@@ -60,7 +60,6 @@ class WebSocketService {
   // 断开WebSocket连接
   disconnect(): void {
     if (this.socket) {
-      console.log('🔌 主动断开WebSocket连接');
       this.stopHeartbeat();
       this.socket.close(1000, '主动断开');
       this.socket = null;
@@ -69,15 +68,14 @@ class WebSocketService {
     }
   }
 
-  // 发送消息
-  send(data: any): void {
-    if (this.socket && this.isConnected) {
-      console.log('📤 发送WebSocket消息:', data);
-      this.socket.send(JSON.stringify(data));
-    } else {
-      console.warn('⚠️ WebSocket未连接，无法发送消息');
+    // 发送消息
+    send(data: any): void {
+      if (this.socket && this.socket.readyState === WebSocket.OPEN) {
+        this.socket.send(JSON.stringify(data));
+      } else {
+        console.warn('⚠️ WebSocket未连接，无法发送消息，当前状态:', this.socket?.readyState);
+      }
     }
-  }
 
   // 监听事件
   on<K extends keyof WebSocketEvents>(event: K, callback: WebSocketEvents[K]): void {
@@ -114,7 +112,6 @@ class WebSocketService {
   private handleMessage(data: string): void {
     try {
       const message = JSON.parse(data);
-      console.log('📨 收到WebSocket消息:', message);
       
       // 根据消息类型触发相应事件
       switch (message.type) {
@@ -131,7 +128,6 @@ class WebSocketService {
           this.triggerEvent('error', message);
           break;
         default:
-          console.log('未知消息类型:', message.type);
       }
     } catch (error) {
       console.error('❌ 解析WebSocket消息失败:', error);
@@ -203,18 +199,12 @@ class WebSocketService {
     
     // 根据环境选择WebSocket服务器地址
     let wsHost;
-    if (hostname === 'localhost' || hostname === '127.0.0.1') {
-      // 本地开发环境
-      wsHost = 'ws://localhost:8000';
-    } else if (hostname === 'pcbzodaitkpj.sealosbja.site') {
+    if (hostname === 'localhost' || hostname === '127.0.0.1' ||hostname === 'pcbzodaitkpj.sealosbja.site') {
       // 调试环境
       wsHost = 'wss://glbbvnrguhix.sealosbja.site';
     } else if (hostname === 'cedezmdpgixn.sealosbja.site') {
       // 线上环境
       wsHost = 'wss://ohciuodbxwdp.sealosbja.site';
-    } else {
-      // 默认使用本地
-      wsHost = 'ws://localhost:8000';
     }
     
     return `${wsHost}/api/ws/${userId}`;
@@ -226,7 +216,6 @@ class WebSocketService {
       this.reconnectAttempts++;
       const delay = this.reconnectDelay * Math.pow(2, this.reconnectAttempts - 1);
       
-      console.log(`🔄 ${delay}ms后尝试重连 (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
       
       setTimeout(() => {
         if (!this.isConnected && this.userId) {
@@ -248,13 +237,11 @@ class WebSocketService {
         this.userId = userId;
         const wsUrl = this.getWebSocketUrl(userId);
         
-        console.log('🔌 正在创建WebSocket连接:', wsUrl);
         
         this.socket = new WebSocket(wsUrl);
 
         // 连接成功事件
         this.socket.onopen = () => {
-          console.log('✅ WebSocket连接成功');
           this.isConnected = true;
           this.reconnectAttempts = 0;
           this.startHeartbeat();
@@ -270,7 +257,6 @@ class WebSocketService {
 
         // 断开连接事件
         this.socket.onclose = (event) => {
-          console.log('🔌 WebSocket连接断开:', event.code, event.reason);
           this.isConnected = false;
           this.stopHeartbeat();
           

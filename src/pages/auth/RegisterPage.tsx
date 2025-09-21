@@ -79,7 +79,6 @@ const RegisterPage: React.FC<RegisterPageProps> = ({
   };
 
   const handleAgreementClick = (type: 'terms' | 'privacy') => {
-    console.log(`打开${type === 'terms' ? '用户服务协议' : '隐私政策'}`);
   };
 
   const { t } = useTranslation();

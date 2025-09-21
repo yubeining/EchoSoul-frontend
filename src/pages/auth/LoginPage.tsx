@@ -61,7 +61,6 @@ const LoginPage: React.FC<LoginPageProps> = ({
   };
 
   const handleThirdPartyLogin = (platform: string) => {
-    console.log(`${platform} 登录`);
   };
 
   const handleGuestLogin = () => {
