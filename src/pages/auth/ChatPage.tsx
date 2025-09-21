@@ -14,6 +14,7 @@ interface ChatPageProps {
   chatUserId?: string; // 从URL参数获取的用户ID
   conversationId?: string; // 从URL参数获取的会话ID
   chatUserUid?: string; // 从URL参数获取的用户UID
+  chatUserNickname?: string; // 从URL参数获取的用户昵称
 }
 
 const ChatPage: React.FC<ChatPageProps> = ({ 
@@ -22,7 +23,8 @@ const ChatPage: React.FC<ChatPageProps> = ({
   onLanguageChange,
   chatUserId,
   conversationId,
-  chatUserUid
+  chatUserUid,
+  chatUserNickname
 }) => {
   const [currentChatUser, setCurrentChatUser] = useState<ChatUser | null>(null);
   const [loading, setLoading] = useState(true);
@@ -89,27 +91,50 @@ const ChatPage: React.FC<ChatPageProps> = ({
               setError('获取AI角色信息失败');
             }
           } else {
-            const response = await userApi.getUserByUid(chatUserUid);
-            
-            if (response.code === 200 || response.code === 1) {
-              const targetUser = response.data.user;
+            try {
+              const response = await userApi.getUserByUid(chatUserUid);
+              
+              if (response.code === 200 || response.code === 1) {
+                const targetUser = response.data.user;
+                
+                setCurrentChatUser({
+                  id: targetUser.id.toString(),
+                  username: targetUser.uid,
+                  nickname: targetUser.nickname,
+                  avatar: targetUser.avatar || '',
+                  status: 'online'
+                });
+                
+                // 设置其他用户信息
+                setOtherUserInfo({
+                  id: targetUser.id,
+                  nickname: targetUser.nickname,
+                  avatar: targetUser.avatar || undefined
+                });
+              } else {
+                throw new Error('获取用户信息失败');
+              }
+            } catch (error) {
+              console.error('获取用户信息失败，使用传递的参数:', error);
+              
+              // 使用传递的参数作为后备
+              const fallbackUserId = chatUserUid || 'unknown';
+              const fallbackNickname = chatUserNickname || `用户${fallbackUserId}`;
               
               setCurrentChatUser({
-                id: targetUser.id.toString(),
-                username: targetUser.uid,
-                nickname: targetUser.nickname,
-                avatar: targetUser.avatar || '',
+                id: fallbackUserId,
+                username: fallbackUserId,
+                nickname: fallbackNickname,
+                avatar: '',
                 status: 'online'
               });
               
               // 设置其他用户信息
               setOtherUserInfo({
-                id: targetUser.id,
-                nickname: targetUser.nickname,
-                avatar: targetUser.avatar || undefined
+                id: parseInt(fallbackUserId) || 0,
+                nickname: fallbackNickname,
+                avatar: undefined
               });
-            } else {
-              setError('获取用户信息失败');
             }
           }
         } else if (conversationId && chatUserUid) {

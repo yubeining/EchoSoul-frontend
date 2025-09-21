@@ -155,6 +155,7 @@ function AppContent() {
         const chatUserId = urlParams.get('userId') || urlParams.get('userid');
         const conversationId = urlParams.get('conversationId');
         const chatUserUid = urlParams.get('chatUserUid') || urlParams.get('uid');
+        const chatUserNickname = urlParams.get('nickname');
         
         return (
           <ChatPage 
@@ -162,6 +163,7 @@ function AppContent() {
             chatUserId={chatUserId || undefined}
             conversationId={conversationId || undefined}
             chatUserUid={chatUserUid || undefined}
+            chatUserNickname={chatUserNickname || undefined}
           />
         );
       

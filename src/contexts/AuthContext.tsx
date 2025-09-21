@@ -29,9 +29,15 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<UserInfo | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [isInitialized, setIsInitialized] = useState(false);
 
   // 初始化认证状态
   useEffect(() => {
+    // 防止重复初始化
+    if (isInitialized) {
+      return;
+    }
+
     const initAuth = async () => {
       try {
         const currentToken = tokenManager.getToken();
@@ -53,11 +59,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         tokenManager.removeToken();
       } finally {
         setIsLoading(false);
+        setIsInitialized(true);
       }
     };
 
     initAuth();
-  }, []);
+  }, [isInitialized]);
 
   // 登录方法
   const login = async (credentials: LoginRequest): Promise<boolean> => {

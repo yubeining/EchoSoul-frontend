@@ -1,9 +1,10 @@
 import React, { useEffect, useState } from 'react';
 import '../../styles/components/ChatHistory.css';
 import { useChat, ChatHistoryItem } from '../../hooks/useChat';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface ChatHistoryProps {
-  onChatClick: (chatId: string) => void;
+  onChatClick: (conversationId: string, userInfo: { id: string; nickname: string; avatar?: string }) => void;
   onNewChat: () => void;
 }
 
@@ -11,29 +12,41 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
   onChatClick,
   onNewChat
 }) => {
-  const { getChatHistory, loading, error, conversations, fetchConversations } = useChat();
+  const { user } = useAuth();
+  const { loading, error, fetchConversations } = useChat();
   const [chatList, setChatList] = useState<ChatHistoryItem[]>([]);
+  const [searchQuery, setSearchQuery] = useState<string>('');
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
 
-  // 组件挂载时主动获取会话列表
+  // 组件挂载时获取聊天历史
   useEffect(() => {
-    fetchConversations();
-  }, [fetchConversations]);
-
-  // 当会话列表更新时，获取聊天历史
-  useEffect(() => {
-    const updateChatHistory = async () => {
-      if (conversations.length > 0) {
-        try {
-          const history = await getChatHistory();
-          setChatList(history);
-        } catch (err) {
-          console.error('获取聊天历史失败:', err);
-        }
+    const loadChatHistory = async () => {
+      try {
+        const history = await fetchConversations();
+        console.log('📋 ChatHistory: 获取到的聊天历史', history);
+        setChatList(history);
+      } catch (err) {
+        console.error('获取聊天历史失败:', err);
+        setChatList([]);
       }
     };
 
-    updateChatHistory();
-  }, [conversations, getChatHistory]);
+    loadChatHistory();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // 只在组件挂载时执行一次
+
+  // 刷新聊天记录
+  const handleRefresh = async () => {
+    setIsRefreshing(true);
+    try {
+      const history = await fetchConversations();
+      setChatList(history);
+    } catch (err) {
+      console.error('刷新聊天记录失败:', err);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);
     const now = new Date();
@@ -58,19 +71,66 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
   };
 
   const formatLastMessage = (message: ChatHistoryItem['lastMessage'], currentUserId: string) => {
+    if (!message || !message.content) {
+      return '暂无消息';
+    }
+    
     const isFromCurrentUser = message.senderId === currentUserId;
     const prefix = isFromCurrentUser ? '我: ' : '';
-    return prefix + message.content;
+    
+    // 限制消息预览长度
+    const maxLength = 50;
+    const content = message.content.length > maxLength 
+      ? message.content.substring(0, maxLength) + '...'
+      : message.content;
+    
+    return prefix + content;
   };
+
+  // 过滤聊天列表
+  const filteredChatList = chatList.filter(chat => {
+    if (!searchQuery.trim()) return true;
+    
+    const query = searchQuery.toLowerCase();
+    return (
+      chat.user.nickname.toLowerCase().includes(query) ||
+      chat.user.username.toLowerCase().includes(query) ||
+      chat.lastMessage.content.toLowerCase().includes(query)
+    );
+  });
 
   return (
     <div className="chat-history">
       <div className="chat-history-header">
         <h2>聊天记录</h2>
-        <button className="new-chat-btn" onClick={onNewChat}>
-          <span className="new-chat-icon">+</span>
-          新建聊天
-        </button>
+        <div className="header-actions">
+          <button 
+            className="refresh-btn" 
+            onClick={handleRefresh}
+            disabled={isRefreshing || loading}
+            title="刷新聊天记录"
+          >
+            <span className={`refresh-icon ${isRefreshing ? 'spinning' : ''}`}>🔄</span>
+          </button>
+          <button className="new-chat-btn" onClick={onNewChat}>
+            <span className="new-chat-icon">+</span>
+            新建聊天
+          </button>
+        </div>
+      </div>
+
+      {/* 搜索框 */}
+      <div className="chat-search">
+        <div className="search-input-container">
+          <span className="search-icon">🔍</span>
+          <input
+            type="text"
+            className="search-input"
+            placeholder="搜索聊天记录..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+          />
+        </div>
       </div>
 
       <div className="chat-history-list">
@@ -85,18 +145,39 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
             <div className="error-text">加载失败</div>
             <div className="error-hint">{error}</div>
           </div>
-        ) : chatList.length === 0 ? (
+        ) : filteredChatList.length === 0 ? (
           <div className="empty-chat-list">
-            <div className="empty-icon">💬</div>
-            <div className="empty-text">暂无聊天记录</div>
-            <div className="empty-hint">开始与用户聊天吧！</div>
+            <div className="empty-icon">🔍</div>
+            <div className="empty-text">
+              {searchQuery ? '未找到匹配的聊天记录' : '暂无聊天记录'}
+            </div>
+            <div className="empty-hint">
+              {searchQuery ? '尝试使用其他关键词搜索' : '开始与用户聊天吧！'}
+            </div>
           </div>
         ) : (
-          chatList.map((chat) => (
+          filteredChatList.map((chat) => {
+            const handleChatItemClick = () => {
+              console.log('🔄 ChatHistory: 点击聊天项', {
+                conversationId: chat.id,
+                userInfo: {
+                  id: chat.user.id,
+                  nickname: chat.user.nickname,
+                  avatar: chat.user.avatar
+                }
+              });
+              onChatClick(chat.id, {
+                id: chat.user.id,
+                nickname: chat.user.nickname,
+                avatar: chat.user.avatar
+              });
+            };
+            
+            return (
             <div
               key={chat.id}
               className={`chat-item ${chat.isPinned ? 'pinned' : ''}`}
-              onClick={() => onChatClick(chat.id)}
+              onClick={handleChatItemClick}
             >
               <div className="chat-item-avatar">
                 {chat.user.avatar ? (
@@ -122,7 +203,7 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
 
                 <div className="chat-item-preview">
                   <div className="chat-item-message">
-                    {formatLastMessage(chat.lastMessage, 'current_user')}
+                    {formatLastMessage(chat.lastMessage, user?.id.toString() || '')}
                   </div>
                   {chat.unreadCount > 0 && (
                     <div className="unread-badge">
@@ -132,7 +213,8 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
                 </div>
               </div>
             </div>
-          ))
+            );
+          })
         )}
       </div>
 

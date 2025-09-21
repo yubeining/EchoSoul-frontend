@@ -322,10 +322,22 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
 
 
   // 聊天相关处理函数
-  const handleChatClick = (conversationId: string) => {
-    // 跳转到聊天页面，传递会话ID参数
-    const chatUrl = `/chat?conversationId=${conversationId}`;
+  const handleChatClick = (conversationId: string, userInfo: { id: string; nickname: string; avatar?: string }) => {
+    console.log('🔄 DashboardPage: 处理聊天点击', {
+      conversationId,
+      userInfo
+    });
+    
+    // 跳转到聊天页面，传递会话ID和用户信息参数
+    const chatUrl = `/chat?conversationId=${conversationId}&uid=${userInfo.id}&nickname=${encodeURIComponent(userInfo.nickname)}`;
+    console.log('🔄 DashboardPage: 构建的聊天URL', chatUrl);
+    
     window.history.pushState({}, '', chatUrl);
+    
+    // 触发自定义路由变化事件
+    window.dispatchEvent(new CustomEvent('routechange'));
+    
+    // 调用导航函数
     onNavigate('chat');
   };
 

@@ -1,5 +1,5 @@
 import { useState, useCallback, useEffect, useRef } from 'react';
-import { chatApi, Conversation, ChatMessage } from '../services/api';
+import { chatApi, userApi, Conversation, ChatMessage } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useWebSocket } from '../contexts/WebSocketContext';
 
@@ -71,7 +71,6 @@ export const useChat = () => {
   const [isTyping, setIsTyping] = useState<{ [userId: number]: boolean }>({});
   const [unreadMessages, setUnreadMessages] = useState<{ [conversationId: string]: number }>({});
   const currentConversationIdRef = useRef<string | null>(null);
-  const isFetchingRef = useRef<boolean>(false);
 
   // WebSocket事件监听
   useEffect(() => {
@@ -167,59 +166,20 @@ export const useChat = () => {
     };
   }, [isConnected, wsOn, wsOff, user]);
 
-  // 获取会话列表并直接转换为聊天历史（一次调用完成）
-  const fetchConversations = useCallback(async (): Promise<ChatHistoryItem[]> => {
+  // 获取会话列表（按需调用）
+  const fetchConversations = useCallback(async () => {
     if (!user) {
-      return [];
+      return;
     }
     
-    // 防止重复调用
-    if (isFetchingRef.current) {
-      console.log('🔄 正在获取会话列表中，跳过重复调用');
-      return [];
-    }
-    
-    isFetchingRef.current = true;
     setLoading(true);
     setError(null);
     
     try {
       const response = await chatApi.getConversations();
-      console.log('📞 获取会话列表响应:', response);
-      
       if (response.code === 200 || response.code === 1) {
-        // 根据API响应结构，data.conversations 包含会话数组
-        const conversationsData = response.data.conversations || [];
-        
-        console.log('📋 处理后的会话数据:', conversationsData);
-        setConversations(conversationsData);
-        
-        // 直接转换为聊天历史项，避免重复调用
-        const chatHistoryItems: ChatHistoryItem[] = conversationsData.map((conv) => {
-          const otherUserId = conv.user1_id === user.id ? conv.user2_id : conv.user1_id;
-          
-          return {
-            id: conv.conversation_id,
-            user: {
-              id: otherUserId.toString(),
-              username: `user_${otherUserId}`,
-              nickname: conv.conversation_name || `用户${otherUserId}`,
-              avatar: '',
-              status: 'offline'
-            },
-            lastMessage: {
-              content: '暂无消息',
-              timestamp: conv.last_message_time || conv.create_time,
-              senderId: ''
-            },
-            unreadCount: 0,
-            isPinned: false
-          };
-        });
-        
-        console.log('✅ 聊天历史转换完成，数量:', chatHistoryItems.length);
+        setConversations(response.data);
         setError(null);
-        return chatHistoryItems;
       } else {
         throw new Error(response.msg || '获取会话列表失败');
       }
@@ -227,10 +187,8 @@ export const useChat = () => {
       console.error('❌ 获取会话列表失败:', err);
       const errorMessage = err instanceof Error ? err.message : '获取会话列表失败';
       setError(errorMessage);
-      return [];
     } finally {
       setLoading(false);
-      isFetchingRef.current = false;
     }
   }, [user]);
 
@@ -454,6 +412,51 @@ export const useChat = () => {
     };
   }, []);
 
+  // 获取聊天历史列表（用于聊天记录页面）
+  const getChatHistory = useCallback(async (): Promise<ChatHistoryItem[]> => {
+    if (!user) return [];
+    
+    const chatHistoryItems: ChatHistoryItem[] = [];
+    
+    for (const conv of conversations) {
+      const otherUserId = conv.user1_id === user.id ? conv.user2_id : conv.user1_id;
+      
+      try {
+        // 获取对方用户信息
+        const userResponse = await userApi.searchUsers(`user_id:${otherUserId}`, 1, 1);
+        let otherUser = null;
+        if (userResponse.code === 200 && userResponse.data.users.length > 0) {
+          otherUser = userResponse.data.users[0];
+        }
+        
+        const chatItem: ChatHistoryItem = {
+          id: conv.conversation_id,
+          user: {
+            id: otherUserId.toString(),
+            username: otherUser?.username || `用户${otherUserId}`,
+            nickname: otherUser?.nickname || conv.conversation_name || `用户${otherUserId}`,
+            avatar: otherUser?.avatar || '',
+            status: 'offline'
+          },
+          lastMessage: {
+            content: '', // 暂时为空，后续可以从最后消息中获取
+            timestamp: conv.last_message_time || conv.create_time,
+            senderId: ''
+          },
+          unreadCount: 0,
+          isPinned: false
+        };
+        
+        chatHistoryItems.push(chatItem);
+      } catch (error) {
+        console.error('获取用户信息失败:', error);
+        // 即使获取用户信息失败，也添加基本的聊天项
+        chatHistoryItems.push(convertToChatHistoryItem(conv, user.id));
+      }
+    }
+    
+    return chatHistoryItems;
+  }, [conversations, user, convertToChatHistoryItem]);
 
   // 清空当前聊天
   const clearCurrentChat = useCallback(() => {
@@ -511,6 +514,7 @@ export const useChat = () => {
     getOrCreateConversation,
     fetchMessages,
     sendMessage,
+    getChatHistory,
     clearCurrentChat,
     setOtherUserInfo,
     

@@ -317,6 +317,9 @@ class ApiClient {
   }
 }
 
+// 请求去重管理
+const pendingRequests = new Map<string, Promise<ApiResponse<UserInfo>>>();
+
 // 创建API客户端实例
 const apiClient = new ApiClient(API_BASE_URLS[0]);
 
@@ -332,9 +335,27 @@ export const authApi = {
     return apiClient.post('/api/auth/login', data);
   },
 
-  // 获取用户信息
+  // 获取用户信息（带请求去重）
   async getUserInfo(): Promise<ApiResponse<UserInfo>> {
-    return apiClient.get('/api/auth/user/info');
+    const requestKey = 'getUserInfo';
+    
+    // 如果已有相同的请求正在进行，返回该请求的Promise
+    if (pendingRequests.has(requestKey)) {
+      return pendingRequests.get(requestKey)!;
+    }
+    
+    // 创建新的请求
+    const requestPromise = apiClient.get<UserInfo>('/api/auth/user/info');
+    
+    // 将请求存储到Map中
+    pendingRequests.set(requestKey, requestPromise);
+    
+    // 请求完成后从Map中移除
+    requestPromise.finally(() => {
+      pendingRequests.delete(requestKey);
+    });
+    
+    return requestPromise;
   },
 
   // 修改用户资料
@@ -503,7 +524,7 @@ export const chatApi = {
   },
 
   // 获取用户会话列表
-  async getConversations(user1Id?: number, user2Id?: number): Promise<ApiResponse<Conversation[]>> {
+  async getConversations(user1Id?: number, user2Id?: number): Promise<ApiResponse<{ conversations: Conversation[] }>> {
     try {
       let url = '/api/chat/conversations';
       const params = new URLSearchParams();
@@ -520,7 +541,7 @@ export const chatApi = {
         url += `?${params.toString()}`;
       }
       
-      const response = await apiClient.get(url) as ApiResponse<Conversation[]>;
+      const response = await apiClient.get(url) as ApiResponse<{ conversations: Conversation[] }>;
       
       // 检查响应状态码
       if (response.code === 200 || response.code === 1) {
