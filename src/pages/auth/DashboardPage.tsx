@@ -229,6 +229,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
       const response = await aiCharacterApi.getCharacters(listType, 1, 20);
       
       if (response.code === 1) {
+        console.log('🤖 AI角色数据:', response.data.characters);
         setAiCharacters(response.data.characters);
         setAiLibraryType(listType);
       } else {
@@ -936,7 +937,13 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                     暂无AI角色
                   </div>
                 ) : (
-                  aiCharacters.map((character) => (
+                  aiCharacters.map((character) => {
+                    console.log('🎭 渲染角色卡片:', { 
+                      name: character.name, 
+                      nickname: character.nickname,
+                      character_id: character.character_id 
+                    });
+                    return (
                     <div key={character.character_id} className="ai-character-card" style={{
                       border: '1px solid #e0e0e0',
                       borderRadius: '8px',
@@ -978,7 +985,18 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                         </div>
                         <div className="character-info">
                           <h3 style={{ margin: '0 0 5px 0', fontSize: '18px' }}>{character.name}</h3>
-                          <p style={{ margin: '0', color: '#666', fontSize: '14px' }}>@{character.nickname}</p>
+                          <p style={{ 
+                            margin: '0', 
+                            color: '#8e44ad', 
+                            fontSize: '14px',
+                            fontWeight: '500',
+                            backgroundColor: '#f8f9fa',
+                            padding: '2px 8px',
+                            borderRadius: '12px',
+                            display: 'inline-block'
+                          }}>
+                            @{character.nickname || character.name || '未知角色'}
+                          </p>
                         </div>
                       </div>
                       
@@ -1033,7 +1051,8 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
                         </button>
                       </div>
                     </div>
-                  ))
+                    );
+                  })
                 )}
               </div>
             )}
