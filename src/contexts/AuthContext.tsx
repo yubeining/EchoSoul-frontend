@@ -86,8 +86,33 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else {
         throw new Error(response.msg);
       }
-    } catch (error) {
+    } catch (error: any) {
       logError('登录失败:', error);
+      
+      // 提供更友好的错误信息
+      let errorMessage = '登录失败，请稍后重试';
+      
+      if (error.type === 'timeout') {
+        errorMessage = '登录超时，请检查网络连接';
+      } else if (error.type === 'network') {
+        errorMessage = '网络连接失败，请检查网络设置';
+      } else if (error.message) {
+        if (error.message.includes('Failed to fetch')) {
+          errorMessage = '无法连接到服务器，请检查网络连接';
+        } else if (error.message.includes('timeout')) {
+          errorMessage = '请求超时，请稍后重试';
+        } else {
+          errorMessage = error.message;
+        }
+      }
+      
+      // 可以在这里添加用户友好的错误提示
+      console.error('登录错误详情:', {
+        message: errorMessage,
+        originalError: error,
+        timestamp: new Date().toISOString()
+      });
+      
       return false;
     } finally {
       setIsLoading(false);

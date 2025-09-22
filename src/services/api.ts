@@ -242,17 +242,24 @@ class ApiClient {
       try {
         const url = `${baseUrl}${endpoint}`;
         
+        // 创建AbortController用于超时控制
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 15000); // 15秒超时
+        
         const response = await fetch(url, {
           ...config,
           mode: 'cors', // 启用CORS
           credentials: 'include', // 发送cookies和认证信息
           cache: 'no-cache', // 禁用缓存
+          signal: controller.signal, // 添加超时控制
           headers: {
             ...config.headers,
             'Accept': 'application/json',
             'Content-Type': 'application/json',
           }
         });
+        
+        clearTimeout(timeoutId); // 清除超时定时器
         
         if (response.ok) {
           const data = await response.json();
@@ -274,13 +281,29 @@ class ApiClient {
           }
         }
       } catch (error: any) {
-        
-        // 如果是CORS错误，不要将其作为最终错误
-        if (error.name === 'TypeError' && error.message.includes('CORS')) {
+        // 处理不同类型的错误
+        if (error.name === 'AbortError') {
+          lastError = {
+            message: '请求超时，请检查网络连接',
+            status: 0,
+            type: 'timeout'
+          };
+        } else if (error.name === 'TypeError' && error.message.includes('Failed to fetch')) {
+          lastError = {
+            message: '网络连接失败，请检查网络设置或服务器状态',
+            status: 0,
+            type: 'network'
+          };
+        } else if (error.name === 'TypeError' && error.message.includes('CORS')) {
+          // 如果是CORS错误，不要将其作为最终错误，继续尝试下一个服务器
           continue;
+        } else {
+          lastError = {
+            message: error.message || '请求失败',
+            status: 0,
+            type: 'unknown'
+          };
         }
-        
-        lastError = error;
       }
     }
 
