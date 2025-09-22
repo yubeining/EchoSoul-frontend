@@ -1,10 +1,12 @@
 import React, { useState, useRef, useEffect, memo } from 'react';
 import '../../styles/components/ChatDialog.css';
 import { useChat, ChatMessageUI, ChatUser } from '../../hooks/useChat';
+// import { chatApi, aiCharacterApi } from '../../services/api';
 
 interface ChatDialogProps {
   user: ChatUser;
   conversationId?: string;
+  characterId?: string; // 新增：AI角色ID
   onSendMessage?: (content: string) => void;
   onClose: () => void;
   isOpen: boolean;
@@ -14,6 +16,7 @@ interface ChatDialogProps {
 const ChatDialog: React.FC<ChatDialogProps> = memo(({
   user,
   conversationId,
+  characterId,
   onSendMessage,
   onClose,
   isOpen,
@@ -24,6 +27,7 @@ const ChatDialog: React.FC<ChatDialogProps> = memo(({
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
   const [messagesLoaded, setMessagesLoaded] = useState(false);
+  const [waitingForAI, setWaitingForAI] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
   
@@ -31,17 +35,40 @@ const ChatDialog: React.FC<ChatDialogProps> = memo(({
     fetchMessages, 
     sendMessage, 
     currentMessages, 
+    currentConversation,
     setOtherUserInfo,
     setCurrentConversationId,
     sendTyping,
     loadHistory,
-    isTyping
+    waitForAIResponse,
+    isTyping,
+    fetchConversations,
+    // AI WebSocket功能
+    isAIWebSocketConnected,
+    isAISessionActive,
+    aiStreamingMessage,
+    connectAI,
+    startAISession,
+    sendAIMessage,
+    getAIHistory,
+    setAIConversationId,
+    clearAIStreamingMessage
   } = useChat();
 
   // 自动滚动到底部
   const scrollToBottom = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
+
+  // 加载会话列表
+  useEffect(() => {
+    if (isOpen) {
+      console.log('🤖 ChatDialog: 加载会话列表...');
+      fetchConversations().catch(error => {
+        console.error('❌ 加载会话列表失败:', error);
+      });
+    }
+  }, [isOpen, fetchConversations]);
 
   // 重置消息加载状态当conversationId改变时
   useEffect(() => {
@@ -52,13 +79,72 @@ const ChatDialog: React.FC<ChatDialogProps> = memo(({
   // WebSocket会话管理
   useEffect(() => {
     if (conversationId && isOpen) {
-      // 设置当前会话ID
-      setCurrentConversationId(conversationId);
+      // 检查是否是AI对话 - 基于会话信息判断
+      const isAIConversation = currentConversation && currentConversation.user2_id === 0;
       
-      // 加载历史消息
-      loadHistory(conversationId);
+      console.log('🤖 ChatDialog AI对话判断:', { 
+        conversationId, 
+        currentConversation, 
+        user2_id: currentConversation?.user2_id,
+        isAIConversation,
+        isAIWebSocketConnected 
+      });
+      
+      if (isAIConversation) {
+        // AI对话：连接AI WebSocket并开始会话
+        if (!isAIWebSocketConnected) {
+          console.log('🤖 尝试连接AI WebSocket...');
+          connectAI().catch(error => {
+            console.error('❌ AI WebSocket连接失败:', error);
+          });
+        } else {
+          console.log('🤖 AI WebSocket已连接，跳过连接步骤');
+        }
+        
+        // 设置AI会话ID
+        setAIConversationId(conversationId);
+        // 同时设置当前会话ID，确保currentConversation被正确设置
+        setCurrentConversationId(conversationId);
+        
+        // 获取AI角色信息并开始会话
+        const initializeAISession = async () => {
+          try {
+            console.log('🤖 初始化AI会话 - 接收到的参数:', { characterId, user: user.id });
+            
+            let aiCharacterId = characterId;
+            
+        
+            
+            // 如果还是没有，尝试通过API获取角色详情
+            if (!aiCharacterId) {
+              console.log('🤖 尝试通过API获取AI角色信息...');
+              // 这里可以添加获取角色信息的逻辑
+              // 暂时使用默认值
+              aiCharacterId = 'char_001';
+              console.log('🤖 使用默认AI角色ID:', aiCharacterId);
+            }
+            
+            console.log('🤖 开始AI会话:', { aiCharacterId, conversationId, isAIWebSocketConnected });
+            startAISession(aiCharacterId, conversationId);
+          } catch (error) {
+            console.error('❌ 初始化AI会话失败:', error);
+            // 回退到默认角色ID
+            const aiCharacterId = 'char_001';
+            startAISession(aiCharacterId, conversationId);
+          }
+        };
+        
+        initializeAISession();
+        
+        // 加载AI对话历史
+        getAIHistory(conversationId);
+      } else {
+        // 普通用户对话：使用原有逻辑
+        setCurrentConversationId(conversationId);
+        loadHistory(conversationId);
+      }
     }
-  }, [conversationId, isOpen, setCurrentConversationId, loadHistory]);
+  }, [conversationId, isOpen, setCurrentConversationId, loadHistory, connectAI, setAIConversationId, startAISession, getAIHistory, user.id, currentConversation, characterId]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 设置对方用户信息
   useEffect(() => {
@@ -77,6 +163,12 @@ const ChatDialog: React.FC<ChatDialogProps> = memo(({
   // 监听currentMessages的变化，同步到本地messages状态
   useEffect(() => {
     if (currentMessages.length > 0) {
+      console.log('🔄 ChatDialog: 接收到新消息列表:', currentMessages.map(m => ({ 
+        id: m.id, 
+        content: m.content, 
+        senderName: m.senderName, 
+        timestamp: m.timestamp 
+      })));
       setMessages(currentMessages);
     }
   }, [currentMessages, messages.length]);
@@ -142,6 +234,23 @@ const ChatDialog: React.FC<ChatDialogProps> = memo(({
     }
   }, [isOpen]);
 
+  // 监听AI流式消息变化
+  useEffect(() => {
+    if (aiStreamingMessage) {
+      if (aiStreamingMessage.isStreaming) {
+        // AI正在流式回复
+        setWaitingForAI(true);
+      } else {
+        // AI回复完成
+        setWaitingForAI(false);
+        // 清除流式消息状态
+        setTimeout(() => {
+          clearAIStreamingMessage();
+        }, 1000);
+      }
+    }
+  }, [aiStreamingMessage, clearAIStreamingMessage]);
+
   const handleSendMessage = async () => {
     if (!inputValue.trim() || !conversationId || sending) return;
     
@@ -150,15 +259,38 @@ const ChatDialog: React.FC<ChatDialogProps> = memo(({
     setSending(true);
     
     try {
-      // 使用聊天Hook发送消息
-      await sendMessage(
-        conversationId,
-        content,
-        'text'
-      );
+      // 检查是否是AI对话 - 基于会话信息判断
+      const isAIConversation = currentConversation && currentConversation.user2_id === 0;
       
-      // 注意：不需要手动添加消息到本地状态，因为useChat已经通过setCurrentMessages处理了
-      // 消息会通过useEffect监听currentMessages的变化自动同步到本地messages状态
+      if (isAIConversation && isAIWebSocketConnected && isAISessionActive) {
+        // 使用AI WebSocket发送消息
+        console.log('🤖 通过AI WebSocket发送消息:', content);
+        sendAIMessage(content, 'text');
+        
+        // 显示AI思考状态
+        setWaitingForAI(true);
+        console.log('🤖 显示AI思考状态...');
+        
+        // AI流式回复会通过useChat hook自动处理，不需要手动等待
+      } else if (isAIConversation) {
+        // AI对话但WebSocket未连接，回退到HTTP
+        console.log('🤖 AI WebSocket未连接，使用HTTP发送消息');
+        const sentMessage = await sendMessage(conversationId, content, 'text');
+        
+        if (sentMessage) {
+          setWaitingForAI(true);
+          try {
+            await waitForAIResponse(conversationId, user.id);
+          } catch (error) {
+            console.error('❌ 等待AI回复失败:', error);
+          } finally {
+            setWaitingForAI(false);
+          }
+        }
+      } else {
+        // 普通用户对话
+        await sendMessage(conversationId, content, 'text');
+      }
       
       // 如果提供了外部发送消息回调，也调用它
       if (onSendMessage) {
@@ -168,6 +300,7 @@ const ChatDialog: React.FC<ChatDialogProps> = memo(({
       console.error('发送消息失败:', error);
       // 发送失败时恢复输入内容
       setInputValue(content);
+      setWaitingForAI(false);
     } finally {
       setSending(false);
     }
@@ -229,9 +362,16 @@ const ChatDialog: React.FC<ChatDialogProps> = memo(({
             <div className="chat-user-status">
               {user.status === 'online' ? '在线' : '离线'}
               {user.lastActive && ` • ${user.lastActive}`}
-              {/* 显示AI角色标识 */}
+              {/* 显示AI角色标识和连接状态 */}
               {user.id && user.id.startsWith('char_') && (
-                <span className="ai-character-badge">🤖 AI角色</span>
+                <span className="ai-character-badge">
+                  🤖 AI角色
+                  {isAIWebSocketConnected ? (
+                    <span className="ai-connection-status connected">● 已连接</span>
+                  ) : (
+                    <span className="ai-connection-status disconnected">● 未连接</span>
+                  )}
+                </span>
               )}
             </div>
           </div>
@@ -255,10 +395,12 @@ const ChatDialog: React.FC<ChatDialogProps> = memo(({
           </div>
         ) : (
           messages.map((message, index) => {
-            // 判断是否为当前用户发送的消息
+            // 判断消息类型和显示位置
             const isCurrentUser = message.senderName === '我';
+            const isAIMessage = message.isAIMessage || false;
             const showDate = index === 0 || 
               formatDate(message.timestamp) !== formatDate(messages[index - 1].timestamp);
+
 
             return (
               <div key={message.id}>
@@ -267,7 +409,7 @@ const ChatDialog: React.FC<ChatDialogProps> = memo(({
                     {formatDate(message.timestamp)}
                   </div>
                 )}
-                <div className={`chat-message ${isCurrentUser ? 'current-user' : 'other-user'}`}>
+                <div className={`chat-message ${isCurrentUser ? 'current-user' : 'other-user'} ${isAIMessage ? 'ai-message' : ''}`}>
                   {!isCurrentUser && (
                     <div className="message-avatar">
                       {message.senderAvatar ? (
@@ -282,7 +424,14 @@ const ChatDialog: React.FC<ChatDialogProps> = memo(({
                   <div className="message-content">
                     <div className="message-bubble">
                       <div className="message-text">{message.content}</div>
-                      <div className="message-time">{formatTime(message.timestamp)}</div>
+                      <div className="message-time">
+                        {formatTime(message.timestamp)}
+                        {isAIMessage && message.aiCharacterId && (
+                          <span className="ai-character-badge">
+                            🤖 {message.aiCharacterId}
+                          </span>
+                        )}
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -302,6 +451,23 @@ const ChatDialog: React.FC<ChatDialogProps> = memo(({
             <span className="typing-text">
               {Object.keys(isTyping).filter(userId => isTyping[parseInt(userId)]).length > 0 && '正在输入...'}
             </span>
+          </div>
+        )}
+        
+        {/* AI正在思考指示器 */}
+        {waitingForAI && (
+          <div className="ai-thinking-indicator">
+            <div className="ai-thinking-avatar">
+              <span className="ai-icon">🤖</span>
+            </div>
+            <div className="ai-thinking-content">
+              <div className="ai-thinking-dots">
+                <span></span>
+                <span></span>
+                <span></span>
+              </div>
+              <span className="ai-thinking-text">AI正在思考中...</span>
+            </div>
           </div>
         )}
         

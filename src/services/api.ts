@@ -488,6 +488,11 @@ export interface ChatMessage {
   reply_to_message_id: string | null;
   create_time: string;
   update_time: string;
+  // AI消息相关字段
+  is_ai_message: boolean;
+  ai_character_id: string | null;
+  sender_name?: string;
+  sender_avatar?: string;
 }
 
 // 聊天API

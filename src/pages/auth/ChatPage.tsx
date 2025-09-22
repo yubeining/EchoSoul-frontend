@@ -357,6 +357,7 @@ const ChatPage: React.FC<ChatPageProps> = ({
             <ChatDialog
               user={currentChatUser}
               conversationId={actualConversationId || undefined}
+              characterId={chatUserUid}
               onSendMessage={handleSendMessage}
               onClose={handleBackToChatHistory}
               isOpen={true}

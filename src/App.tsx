@@ -9,6 +9,7 @@ import Navigation from './components/layout/Navigation';
 import { AuthProvider } from './contexts/AuthContext';
 import { TranslationProvider } from './contexts/TranslationContext';
 import { WebSocketProvider } from './contexts/WebSocketContext';
+import { AIWebSocketProvider } from './contexts/AIWebSocketContext';
 import { translations, TranslationKeys } from './data/translations';
 
 // 路由配置
@@ -268,7 +269,9 @@ function App() {
     <TranslationProvider>
       <AuthProvider>
         <WebSocketProvider>
-          <AppContent />
+          <AIWebSocketProvider>
+            <AppContent />
+          </AIWebSocketProvider>
         </WebSocketProvider>
       </AuthProvider>
     </TranslationProvider>

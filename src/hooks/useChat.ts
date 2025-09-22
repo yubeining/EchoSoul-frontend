@@ -2,6 +2,7 @@ import { useState, useCallback, useEffect, useRef } from 'react';
 import { chatApi, Conversation, ChatMessage } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useWebSocket } from '../contexts/WebSocketContext';
+import { useAIWebSocket } from '../contexts/AIWebSocketContext';
 
 // 聊天历史项接口（用于聊天记录列表）
 export interface ChatHistoryItem {
@@ -45,6 +46,9 @@ export interface ChatMessageUI {
   fileName?: string;
   fileSize?: number;
   replyToMessageId?: string;
+  // AI消息相关字段
+  isAIMessage?: boolean;
+  aiCharacterId?: string | null;
 }
 
 // 移除全局状态，使用组件内部状态管理
@@ -60,6 +64,25 @@ export const useChat = () => {
     getHistory: wsGetHistory
   } = useWebSocket();
   
+  // AI WebSocket功能
+  const {
+    isConnected: isAIConnected,
+    isAISessionActive,
+    currentAICharacter,
+    currentConversationId: aiConversationId,
+    aiStreamingMessage,
+    userMessageSent,
+    connect: connectAI,
+    disconnect: disconnectAI,
+    startAISession,
+    endAISession,
+    sendMessage: sendAIMessage,
+    getConversationHistory: getAIHistory,
+    setCurrentConversationId: setAIConversationId,
+    clearAIStreamingMessage,
+    clearUserMessageSent
+  } = useAIWebSocket();
+  
   const [conversations, setConversations] = useState<Conversation[]>([]);
   const [currentConversation, setCurrentConversation] = useState<Conversation | null>(null);
   const [currentMessages, setCurrentMessages] = useState<ChatMessageUI[]>([]);
@@ -72,6 +95,8 @@ export const useChat = () => {
   const [unreadMessages, setUnreadMessages] = useState<{ [conversationId: string]: number }>({});
   const currentConversationIdRef = useRef<string | null>(null);
   const isFetchingRef = useRef<boolean>(false);
+  const waitForAIResponseRef = useRef<((conversationId: string, aiCharacterId: string) => Promise<void>) | null>(null);
+  const convertToUIMessageRef = useRef<((message: ChatMessage) => ChatMessageUI) | null>(null);
 
   // WebSocket事件监听
   useEffect(() => {
@@ -79,22 +104,38 @@ export const useChat = () => {
 
     // 监听新消息
     const handleNewMessage = (data: any) => {
+      console.log('📨 WebSocket收到新消息:', data);
       
-      // 转换消息格式
-      const newMessage: ChatMessageUI = {
-        id: data.message_id,
-        senderId: data.sender_id.toString(),
-        senderName: data.sender_name || '未知用户',
-        senderAvatar: data.sender_avatar || '',
+      // 使用统一的AI消息识别逻辑
+      const tempMessage: ChatMessage = {
+        message_id: data.message_id,
+        conversation_id: data.conversation_id,
+        sender_id: data.sender_id,
+        receiver_id: data.receiver_id || 0,
         content: data.content,
-        timestamp: data.timestamp,
-        type: data.message_type || 'text'
+        message_type: data.message_type || 'text',
+        file_url: data.file_url || null,
+        file_name: data.file_name || null,
+        file_size: data.file_size || null,
+        is_deleted: 0,
+        reply_to_message_id: data.reply_to_message_id || null,
+        create_time: data.timestamp,
+        update_time: '',
+        is_ai_message: data.is_ai_message || false,
+        ai_character_id: data.ai_character_id || null,
+        sender_name: data.sender_name,
+        sender_avatar: data.sender_avatar
       };
+      
+      // 使用convertToUIMessage转换消息格式
+      const newMessage = convertToUIMessage(tempMessage);
+      
+      console.log('🔄 转换后的消息:', { newMessage, userId: user?.id, senderId: data.sender_id });
       
       // 如果是当前会话的消息
       if (data.conversation_id === currentConversationIdRef.current) {
         setCurrentMessages(prev => {
-          // 检查是否是当前用户发送的消息（通过内容匹配临时消息）
+          let updatedMessages;
           const isCurrentUserMessage = user && data.sender_id === user.id;
           
           if (isCurrentUserMessage) {
@@ -102,19 +143,40 @@ export const useChat = () => {
             const tempMessageIndex = prev.findIndex(msg => 
               msg.id.startsWith('temp_') && 
               msg.content === data.content && 
-              msg.senderId === user.id.toString()
+              msg.senderId === user?.id.toString()
             );
             
             if (tempMessageIndex !== -1) {
               // 替换临时消息
-              const updatedMessages = [...prev];
+              updatedMessages = [...prev];
               updatedMessages[tempMessageIndex] = newMessage;
-              return updatedMessages;
+              console.log('✅ 替换临时消息:', { tempMessageIndex, newMessage });
+            } else {
+              // 没有找到临时消息，直接添加
+              updatedMessages = [...prev, newMessage];
+              console.log('➕ 添加当前用户消息:', newMessage);
             }
+          } else {
+            // 对方消息，直接添加
+            updatedMessages = [...prev, newMessage];
+            console.log('➕ 添加对方消息:', newMessage);
           }
           
-          // 如果不是当前用户的消息，或者是当前用户消息但没有找到临时消息，直接添加
-          return [...prev, newMessage];
+          // 重新按时间排序（从早到晚）
+          const sortedMessages = updatedMessages.sort((a, b) => {
+            const timeA = new Date(a.timestamp).getTime();
+            const timeB = new Date(b.timestamp).getTime();
+            return timeA - timeB;
+          });
+          
+          console.log('📋 排序后的消息列表:', sortedMessages.map(m => ({ 
+            id: m.id, 
+            content: m.content, 
+            senderName: m.senderName, 
+            timestamp: m.timestamp 
+          })));
+          
+          return sortedMessages;
         });
       } else {
         // 其他会话的消息，增加未读计数
@@ -127,20 +189,48 @@ export const useChat = () => {
 
     // 监听响应消息
     const handleResponse = (data: any) => {
+      console.log('📥 WebSocket收到响应:', data);
       
       if (data.original_type === 'get_history' && data.result.success) {
-        // 处理历史消息
-        const historyMessages = data.result.messages.map((msg: any) => ({
-          id: msg.message_id,
-          senderId: msg.sender_id.toString(),
-          senderName: msg.sender_name || '未知用户',
-          senderAvatar: msg.sender_avatar || '',
-          content: msg.content,
-          timestamp: msg.timestamp,
-          type: msg.message_type || 'text'
-        }));
+        // 处理历史消息，使用统一的AI消息识别逻辑
+        const historyMessages = data.result.messages.map((msg: any) => {
+          const tempMessage: ChatMessage = {
+            message_id: msg.message_id,
+            conversation_id: data.conversation_id || '',
+            sender_id: msg.sender_id,
+            receiver_id: msg.receiver_id || 0,
+            content: msg.content,
+            message_type: msg.message_type || 'text',
+            file_url: msg.file_url || null,
+            file_name: msg.file_name || null,
+            file_size: msg.file_size || null,
+            is_deleted: msg.is_deleted || 0,
+            reply_to_message_id: msg.reply_to_message_id || null,
+            create_time: msg.timestamp,
+            update_time: '',
+            is_ai_message: msg.is_ai_message || false,
+            ai_character_id: msg.ai_character_id || null,
+            sender_name: msg.sender_name,
+            sender_avatar: msg.sender_avatar
+          };
+          return convertToUIMessageRef.current ? convertToUIMessageRef.current(tempMessage) : tempMessage as any;
+        });
         
-        setCurrentMessages(historyMessages);
+        // 按时间排序（从早到晚）
+        const sortedMessages = historyMessages.sort((a: ChatMessageUI, b: ChatMessageUI) => {
+          const timeA = new Date(a.timestamp).getTime();
+          const timeB = new Date(b.timestamp).getTime();
+          return timeA - timeB;
+        });
+        
+        console.log('📋 WebSocket历史消息:', sortedMessages.map((m: ChatMessageUI) => ({ 
+          id: m.id, 
+          content: m.content, 
+          senderName: m.senderName, 
+          timestamp: m.timestamp 
+        })));
+        
+        setCurrentMessages(sortedMessages);
       }
     };
 
@@ -165,7 +255,7 @@ export const useChat = () => {
       wsOff('response', handleResponse);
       wsOff('typing_status', handleTypingStatus);
     };
-  }, [isConnected, wsOn, wsOff, user]);
+  }, [isConnected, wsOn, wsOff, user, otherUser?.avatar, otherUser?.nickname, currentConversationIdRef]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // 获取会话列表并直接转换为聊天历史（一次调用完成）
   const fetchConversations = useCallback(async (): Promise<ChatHistoryItem[]> => {
@@ -272,25 +362,67 @@ export const useChat = () => {
     }
   }, [user]);
 
+  // 消息类型检测函数
+  const getMessageType = useCallback((message: ChatMessage) => {
+    if (message.is_ai_message) {
+      // AI消息
+      return {
+        type: 'ai_reply',
+        aiCharacterId: message.ai_character_id,
+        displayName: message.ai_character_id ? `AI-${message.ai_character_id}` : 'AI',
+        isFromAI: true,
+        isFromCurrentUser: false
+      };
+    } else if (message.receiver_id === 0 && message.ai_character_id) {
+      // 用户发给AI的消息
+      return {
+        type: 'user_to_ai',
+        aiCharacterId: message.ai_character_id,
+        displayName: '我',
+        isFromAI: false,
+        isFromCurrentUser: user && message.sender_id === user.id
+      };
+    } else {
+      // 用户间消息
+      const isFromCurrentUser = user && message.sender_id === user.id;
+      return {
+        type: 'user_to_user',
+        aiCharacterId: null,
+        displayName: isFromCurrentUser ? '我' : (otherUser?.nickname || '对方'),
+        isFromAI: false,
+        isFromCurrentUser
+      };
+    }
+  }, [user, otherUser]);
+
   // 将后端消息格式转换为UI消息格式
   const convertToUIMessage = useCallback((message: ChatMessage): ChatMessageUI => {
-    // 判断是否为当前用户发送的消息
-    const isCurrentUser = user && message.sender_id === user.id;
+    const messageType = getMessageType(message);
     
     return {
       id: message.message_id,
       senderId: message.sender_id.toString(),
-      senderName: isCurrentUser ? '我' : (otherUser?.nickname || '对方'), // 使用对方真实昵称
-      senderAvatar: isCurrentUser ? '' : (otherUser?.avatar || ''), // 使用对方真实头像
+      senderName: messageType.displayName,
+      senderAvatar: messageType.isFromAI ? 
+        (message.ai_character_id ? `/avatars/ai-${message.ai_character_id}.jpg` : '') : 
+        (messageType.isFromCurrentUser ? '' : (otherUser?.avatar || '')),
       content: message.content,
       timestamp: message.create_time,
       type: message.message_type,
       fileUrl: message.file_url || undefined,
       fileName: message.file_name || undefined,
       fileSize: message.file_size || undefined,
-      replyToMessageId: message.reply_to_message_id || undefined
+      replyToMessageId: message.reply_to_message_id || undefined,
+      // 添加AI相关字段
+      isAIMessage: messageType.isFromAI,
+      aiCharacterId: messageType.aiCharacterId
     };
-  }, [user, otherUser]);
+  }, [otherUser, getMessageType]);
+
+  // 更新 convertToUIMessage ref
+  useEffect(() => {
+    convertToUIMessageRef.current = convertToUIMessage;
+  }, [convertToUIMessage]);
 
   // 获取会话消息
   const fetchMessages = useCallback(async (conversationId: string, page: number = 1, limit: number = 50) => {
@@ -332,6 +464,13 @@ export const useChat = () => {
           return timeA - timeB;
         });
         
+        console.log('📋 HTTP API历史消息:', sortedMessages.map(m => ({ 
+          id: m.id, 
+          content: m.content, 
+          senderName: m.senderName, 
+          timestamp: m.timestamp 
+        })));
+        
         setCurrentMessages(sortedMessages);
         return sortedMessages;
       } else {
@@ -358,8 +497,55 @@ export const useChat = () => {
   ) => {
     if (!user) return null;
     
-    // 优先使用WebSocket发送
-    if (isConnected) {
+    // 检查是否是AI对话 - 通过当前用户信息判断
+    const isAIConversation = currentConversation && currentConversation.user2_id === 0;
+    
+    console.log('🤖 消息发送判断:', { 
+      isAIConversation, 
+      currentConversation, 
+      user2_id: currentConversation?.user2_id,
+      isAIConnected, 
+      isAISessionActive,
+      currentAICharacter: currentAICharacter?.character_id,
+      conversationId,
+      currentConversationId: currentConversationIdRef.current
+    });
+    
+    // 如果是AI对话且AI WebSocket已连接，使用AI WebSocket发送
+    if (isAIConversation && isAIConnected && isAISessionActive) {
+      console.log('🤖 发送AI消息:', { content, currentAICharacter, aiCharacterId: currentAICharacter?.character_id });
+      try {
+        // 创建临时消息ID
+        const tempMessageId = `temp_${Date.now()}`;
+        
+        // 创建临时消息对象
+        const tempMessage: ChatMessageUI = {
+          id: tempMessageId,
+          senderId: user.id.toString(),
+          senderName: '我',
+          senderAvatar: '',
+          content,
+          timestamp: new Date().toISOString(),
+          type: messageType,
+          isAIMessage: false,
+          aiCharacterId: currentAICharacter?.character_id || null
+        };
+        
+        // 立即显示发送的消息
+        setCurrentMessages(prev => [...prev, tempMessage]);
+        
+        // 通过AI WebSocket发送消息
+        sendAIMessage(content, messageType);
+        
+        return tempMessage;
+      } catch (err) {
+        console.error('AI WebSocket发送消息失败:', err);
+        // 回退到HTTP请求
+      }
+    }
+    
+    // 优先使用WebSocket发送（普通用户对话）
+    if (isConnected && !isAIConversation) {
       try {
         
         // 创建临时消息ID，用于后续替换
@@ -419,6 +605,20 @@ export const useChat = () => {
             : conv
         ));
         
+        // 检查是否是发给AI的消息，如果是则等待AI回复
+        const messageType = getMessageType(response.data);
+        if (messageType.type === 'user_to_ai' && messageType.aiCharacterId) {
+          console.log('🤖 检测到发给AI的消息，开始等待AI回复...');
+          // 异步等待AI回复，不阻塞UI
+          setTimeout(() => {
+            if (waitForAIResponseRef.current) {
+              waitForAIResponseRef.current(conversationId, messageType.aiCharacterId || '').catch(error => {
+                console.error('❌ 等待AI回复失败:', error);
+              });
+            }
+          }, 100);
+        }
+        
         return newMessage;
       } else {
         throw new Error(response.msg || '发送消息失败');
@@ -428,7 +628,7 @@ export const useChat = () => {
       setError(err instanceof Error ? err.message : '发送消息失败');
       return null;
     }
-  }, [user, isConnected, wsSendMessage, convertToUIMessage]);
+  }, [user, isConnected, wsSendMessage, convertToUIMessage, getMessageType, isAIConnected, isAISessionActive, currentAICharacter, sendAIMessage, currentConversation]);
 
   // 将会话转换为聊天历史项格式
   const convertToChatHistoryItem = useCallback((conversation: Conversation, currentUserId: number): ChatHistoryItem => {
@@ -470,6 +670,21 @@ export const useChat = () => {
   const setCurrentConversationId = useCallback((conversationId: string) => {
     currentConversationIdRef.current = conversationId;
     
+    // 从会话列表中找到对应的会话并设置为当前会话
+    setConversations(prev => {
+      const foundConversation = prev.find(conv => conv.conversation_id === conversationId);
+      if (foundConversation) {
+        // 使用 setTimeout 确保状态更新在下一个事件循环中执行
+        setTimeout(() => {
+          setCurrentConversation(foundConversation);
+          console.log('🤖 设置当前会话:', foundConversation);
+        }, 0);
+      } else {
+        console.log('🤖 未找到会话:', conversationId, '当前会话列表:', prev);
+      }
+      return prev;
+    });
+    
     // 清除该会话的未读消息计数
     setUnreadMessages(prev => {
       const newUnread = { ...prev };
@@ -492,6 +707,135 @@ export const useChat = () => {
     }
   }, [isConnected, wsGetHistory]);
 
+  // 等待AI回复
+  const waitForAIResponse = useCallback(async (conversationId: string, aiCharacterId: string) => {
+    const maxAttempts = 30; // 最多等待30秒
+    const interval = 1000;  // 每秒检查一次
+    
+    console.log('🤖 开始等待AI回复...', { conversationId, aiCharacterId });
+    
+    for (let i = 0; i < maxAttempts; i++) {
+      await new Promise(resolve => setTimeout(resolve, interval));
+      
+      try {
+        // 获取最新消息
+        const response = await chatApi.getMessages(conversationId, 1, 1);
+        
+        if (response.code === 200 || response.code === 1) {
+          let latestMessage;
+          
+          if (Array.isArray(response.data)) {
+            latestMessage = response.data[0];
+          } else if (response.data && typeof response.data === 'object') {
+            const dataObj = response.data as any;
+            if (Array.isArray(dataObj.messages)) {
+              latestMessage = dataObj.messages[0];
+            } else if (Array.isArray(dataObj.data)) {
+              latestMessage = dataObj.data[0];
+            }
+          }
+          
+          if (latestMessage) {
+            console.log('🔍 检查最新消息:', latestMessage);
+            
+            // 检查是否是AI回复
+            if (latestMessage.is_ai_message && latestMessage.ai_character_id === aiCharacterId) {
+              console.log('✅ 收到AI回复:', latestMessage);
+              
+              // 将AI回复添加到消息列表
+              const aiMessage = convertToUIMessage(latestMessage);
+              setCurrentMessages(prev => {
+                const updatedMessages = [...prev, aiMessage];
+                // 重新排序
+                return updatedMessages.sort((a, b) => {
+                  const timeA = new Date(a.timestamp).getTime();
+                  const timeB = new Date(b.timestamp).getTime();
+                  return timeA - timeB;
+                });
+              });
+              break;
+            }
+          }
+        }
+      } catch (error) {
+        console.error('❌ 获取AI回复失败:', error);
+      }
+    }
+    
+    console.log('⏰ AI回复等待结束');
+  }, [convertToUIMessage]);
+
+  // 更新 waitForAIResponse ref
+  useEffect(() => {
+    waitForAIResponseRef.current = waitForAIResponse;
+  }, [waitForAIResponse]);
+
+  // AI流式消息处理
+  useEffect(() => {
+    if (aiStreamingMessage) {
+      // 检查是否已经存在相同的流式消息
+      setCurrentMessages(prev => {
+        const existingIndex = prev.findIndex(msg => msg.id === aiStreamingMessage.messageId);
+        
+        if (existingIndex >= 0) {
+          // 更新现有消息
+          const updatedMessages = [...prev];
+          updatedMessages[existingIndex] = {
+            ...updatedMessages[existingIndex],
+            content: aiStreamingMessage.content,
+            isAIMessage: true,
+            aiCharacterId: currentAICharacter?.character_id || null
+          };
+          return updatedMessages;
+        } else {
+          // 添加新消息
+          const newMessage: ChatMessageUI = {
+            id: aiStreamingMessage.messageId,
+            senderId: currentAICharacter?.character_id || 'ai',
+            senderName: currentAICharacter?.nickname || 'AI助手',
+            senderAvatar: currentAICharacter?.avatar || '',
+            content: aiStreamingMessage.content,
+            timestamp: new Date().toISOString(),
+            type: 'text',
+            isAIMessage: true,
+            aiCharacterId: currentAICharacter?.character_id || null
+          };
+          return [...prev, newMessage];
+        }
+      });
+    }
+  }, [aiStreamingMessage, currentAICharacter]);
+
+  // 处理用户消息已发送通知
+  useEffect(() => {
+    if (userMessageSent) {
+      console.log('📤 收到用户消息已发送通知:', userMessageSent);
+      
+      // 检查是否已经存在相同的消息（避免重复添加）
+      setCurrentMessages(prev => {
+        const existingIndex = prev.findIndex(msg => msg.id === userMessageSent.id);
+        
+        if (existingIndex >= 0) {
+          // 如果消息已存在，更新为正式消息（替换临时消息）
+          const updatedMessages = [...prev];
+          updatedMessages[existingIndex] = {
+            ...updatedMessages[existingIndex],
+            id: userMessageSent.id,
+            timestamp: userMessageSent.timestamp,
+            // 保持其他属性不变
+          };
+          return updatedMessages;
+        } else {
+          // 添加新消息
+          return [...prev, userMessageSent];
+        }
+      });
+      
+      // 清除通知
+      clearUserMessageSent();
+    }
+  }, [userMessageSent, clearUserMessageSent]);
+
   return {
     // 状态
     conversations,
@@ -506,6 +850,13 @@ export const useChat = () => {
     // WebSocket状态
     isWebSocketConnected: isConnected,
     
+    // AI WebSocket状态
+    isAIWebSocketConnected: isAIConnected,
+    isAISessionActive,
+    currentAICharacter,
+    aiConversationId,
+    aiStreamingMessage,
+    
     // 方法
     fetchConversations,
     getOrCreateConversation,
@@ -518,6 +869,17 @@ export const useChat = () => {
     setCurrentConversationId,
     sendTyping,
     loadHistory,
+    waitForAIResponse,
+    
+    // AI WebSocket方法
+    connectAI,
+    disconnectAI,
+    startAISession,
+    endAISession,
+    sendAIMessage,
+    getAIHistory,
+    setAIConversationId,
+    clearAIStreamingMessage,
     
     // 工具方法
     convertToUIMessage,
