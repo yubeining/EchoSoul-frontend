@@ -15,7 +15,8 @@ const getApiBaseUrls = () => {
   if (hostname === 'cedezmdpgixn.sealosbja.site') {
     return [
       'https://ohciuodbxwdp.sealosbja.site',  // 线上环境后端
-      'https://glbbvnrguhix.sealosbja.site',   // 调试环境备用
+      // 暂时移除备用服务器，避免503错误影响用户体验
+      // 'https://glbbvnrguhix.sealosbja.site',   // 调试环境备用
     ];
   }
   
