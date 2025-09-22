@@ -10,6 +10,7 @@ import { useAuth } from '../../contexts/AuthContext';
 import { useUserSearch, UserSearchResult as UserSearchResultType } from '../../hooks/useUserSearch';
 import { useChat } from '../../hooks/useChat';
 import { aiCharacterApi, aiChatApi, CreateAICharacterRequest } from '../../services/api';
+import { debug, error as logError } from '../../utils/logger';
 
 interface DashboardPageProps {
   onNavigate: (page: string) => void;
@@ -201,7 +202,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
         setAiCreationError(response.msg || '创建失败');
       }
     } catch (error: any) {
-      console.error('创建AI角色失败:', error);
+      logError('创建AI角色失败:', error);
       setAiCreationError(error.message || '创建AI角色失败，请重试');
     } finally {
       setIsCreatingAI(false);
@@ -233,7 +234,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
         setAiLibraryError(response.msg || '加载失败');
       }
     } catch (error: any) {
-      console.error('❌ 加载AI角色列表失败:', error);
+      logError('加载AI角色列表失败:', error);
       setAiLibraryError(error.message || '加载AI角色列表失败');
     } finally {
       setAiLibraryLoading(false);
@@ -260,7 +261,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
         alert(response.msg || '创建会话失败');
       }
     } catch (error: any) {
-      console.error('❌ 创建AI会话失败:', error);
+      logError('创建AI会话失败:', error);
       alert(error.message || '创建AI会话失败');
     }
   };
@@ -293,11 +294,11 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
         setTimeout(() => {
         }, 100);
       } else {
-        console.error('会话创建失败，conversation为null');
+        logError('会话创建失败，conversation为null');
         alert('创建会话失败，请重试');
       }
     } catch (error: any) {
-      console.error('创建会话失败:', error);
+      logError('创建会话失败:', error);
       
       // 提供更详细的错误信息
       let errorMessage = '创建会话失败，请稍后重试';
@@ -323,14 +324,14 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
 
   // 聊天相关处理函数
   const handleChatClick = (conversationId: string, userInfo: { id: string; nickname: string; avatar?: string }) => {
-    console.log('🔄 DashboardPage: 处理聊天点击', {
+    debug('DashboardPage: 处理聊天点击', {
       conversationId,
       userInfo
     });
     
     // 跳转到聊天页面，传递会话ID和用户信息参数
     const chatUrl = `/chat?conversationId=${conversationId}&uid=${userInfo.id}&nickname=${encodeURIComponent(userInfo.nickname)}`;
-    console.log('🔄 DashboardPage: 构建的聊天URL', chatUrl);
+    debug('DashboardPage: 构建的聊天URL', chatUrl);
     
     window.history.pushState({}, '', chatUrl);
     

@@ -1,5 +1,6 @@
 // API服务配置和请求工具
 // 根据环境自动选择对应的后端服务地址
+import { error as logError } from '../utils/logger';
 const getApiBaseUrls = () => {
   const hostname = window.location.hostname;
   
@@ -416,7 +417,7 @@ export const userApi = {
       const response = await apiClient.get(`/api/users/search?${params.toString()}`) as ApiResponse<UserSearchResponse>;
       return response;
     } catch (error: any) {
-      console.error(`❌ 用户搜索失败:`, error);
+      logError(`用户搜索失败:`, error);
       
       // 提供更友好的错误信息
       if (error.message?.includes('CORS')) {
@@ -439,7 +440,7 @@ export const userApi = {
       const response = await apiClient.get(`/api/users/${userId}`) as ApiResponse<UserInfo>;
       return response;
     } catch (error: any) {
-      console.error('❌ 根据用户ID获取用户信息失败:', error);
+      logError('根据用户ID获取用户信息失败:', error);
       throw new Error(error.message || '获取用户信息失败');
     }
   },
@@ -450,8 +451,8 @@ export const userApi = {
       const response = await apiClient.get(`/api/users/profile/${uid}`) as ApiResponse<{ user: UserInfo }>;
       return response;
     } catch (error: any) {
-      console.error('❌ 根据用户UID获取用户信息失败:', error);
-      console.error('❌ 错误详情:', {
+      logError('根据用户UID获取用户信息失败:', error);
+      logError('错误详情:', {
         message: error.message,
         status: error.status,
         stack: error.stack
@@ -507,7 +508,7 @@ export const chatApi = {
       
       return response;
     } catch (error: any) {
-      console.error('获取或创建会话失败:', error);
+      logError('获取或创建会话失败:', error);
       
       // 提供更详细的错误信息
       if (error.status) {
@@ -555,7 +556,7 @@ export const chatApi = {
         throw new Error(response.msg || '获取会话列表失败');
       }
     } catch (error: any) {
-      console.error('❌ 获取会话列表失败:', error);
+      logError('获取会话列表失败:', error);
       throw new Error(error.message || '获取会话列表失败');
     }
   },
@@ -582,7 +583,7 @@ export const chatApi = {
         throw new Error(response.msg || '获取会话失败');
       }
     } catch (error: any) {
-      console.error('❌ 获取两个用户之间的会话失败:', error);
+      logError('获取两个用户之间的会话失败:', error);
       throw new Error(error.message || '获取会话失败');
     }
   },
@@ -593,7 +594,7 @@ export const chatApi = {
       const response = await apiClient.get(`/api/chat/conversations/${conversationId}`) as ApiResponse<Conversation>;
       return response;
     } catch (error: any) {
-      console.error('获取会话详情失败:', error);
+      logError('获取会话详情失败:', error);
       throw new Error(error.message || '获取会话详情失败');
     }
   },
@@ -620,7 +621,7 @@ export const chatApi = {
       }) as ApiResponse<ChatMessage>;
       return response;
     } catch (error: any) {
-      console.error('发送消息失败:', error);
+      logError('发送消息失败:', error);
       throw new Error(error.message || '发送消息失败');
     }
   },
@@ -641,7 +642,7 @@ export const chatApi = {
         throw new Error(response.msg || '获取消息列表失败');
       }
     } catch (error: any) {
-      console.error('获取消息列表失败:', error);
+      logError('获取消息列表失败:', error);
       throw new Error(error.message || '获取消息列表失败');
     }
   }
@@ -655,7 +656,7 @@ export const aiCharacterApi = {
       const response = await apiClient.post('/api/ai/characters', data) as ApiResponse<CreateAICharacterResponse>;
       return response;
     } catch (error: any) {
-      console.error('❌ 创建AI角色失败:', error);
+      logError('创建AI角色失败:', error);
       throw new Error(error.message || '创建AI角色失败');
     }
   },
@@ -666,7 +667,7 @@ export const aiCharacterApi = {
       const response = await apiClient.get(`/api/ai/characters?list_type=${listType}&page=${page}&limit=${limit}`) as ApiResponse<AICharacterListResponse>;
       return response;
     } catch (error: any) {
-      console.error('❌ 获取AI角色列表失败:', error);
+      logError('获取AI角色列表失败:', error);
       throw new Error(error.message || '获取AI角色列表失败');
     }
   },
@@ -677,7 +678,7 @@ export const aiCharacterApi = {
       const response = await apiClient.get(`/api/ai/characters/${characterId}`) as ApiResponse<AICharacterDetailResponse>;
       return response;
     } catch (error: any) {
-      console.error('❌ 获取AI角色详情失败:', error);
+      logError('获取AI角色详情失败:', error);
       throw new Error(error.message || '获取AI角色详情失败');
     }
   },
@@ -688,7 +689,7 @@ export const aiCharacterApi = {
       const response = await apiClient.put(`/api/ai/characters/${characterId}`, data) as ApiResponse<{ message: string }>;
       return response;
     } catch (error: any) {
-      console.error('❌ 更新AI角色失败:', error);
+      logError('更新AI角色失败:', error);
       throw new Error(error.message || '更新AI角色失败');
     }
   },
@@ -699,7 +700,7 @@ export const aiCharacterApi = {
       const response = await apiClient.delete(`/api/ai/characters/${characterId}`) as ApiResponse<{ message: string }>;
       return response;
     } catch (error: any) {
-      console.error('❌ 删除AI角色失败:', error);
+      logError('删除AI角色失败:', error);
       throw new Error(error.message || '删除AI角色失败');
     }
   },
@@ -710,7 +711,7 @@ export const aiCharacterApi = {
       const response = await apiClient.post(`/api/ai/characters/${characterId}/favorite`) as ApiResponse<{ message: string }>;
       return response;
     } catch (error: any) {
-      console.error('❌ 收藏AI角色失败:', error);
+      logError('收藏AI角色失败:', error);
       throw new Error(error.message || '收藏AI角色失败');
     }
   },
@@ -721,7 +722,7 @@ export const aiCharacterApi = {
       const response = await apiClient.delete(`/api/ai/characters/${characterId}/favorite`) as ApiResponse<{ message: string }>;
       return response;
     } catch (error: any) {
-      console.error('❌ 取消收藏AI角色失败:', error);
+      logError('取消收藏AI角色失败:', error);
       throw new Error(error.message || '取消收藏AI角色失败');
     }
   }
@@ -735,7 +736,7 @@ export const aiChatApi = {
       const response = await apiClient.post('/api/ai/conversations/ai', data) as ApiResponse<AIConversationResponse>;
       return response;
     } catch (error: any) {
-      console.error('❌ 创建AI会话失败:', error);
+      logError('创建AI会话失败:', error);
       throw new Error(error.message || '创建AI会话失败');
     }
   },
@@ -746,7 +747,7 @@ export const aiChatApi = {
       const response = await apiClient.get(`/api/chat/conversations/ai?page=${page}&limit=${limit}`) as ApiResponse<{ conversations: any[]; total: number; page: number; limit: number }>;
       return response;
     } catch (error: any) {
-      console.error('❌ 获取AI会话列表失败:', error);
+      logError('获取AI会话列表失败:', error);
       throw new Error(error.message || '获取AI会话列表失败');
     }
   },
@@ -757,7 +758,7 @@ export const aiChatApi = {
       const response = await apiClient.post(`/api/chat/messages/ai?conversation_id=${conversationId}&content=${encodeURIComponent(content)}`) as ApiResponse<any>;
       return response;
     } catch (error: any) {
-      console.error('❌ 发送消息到AI失败:', error);
+      logError('发送消息到AI失败:', error);
       throw new Error(error.message || '发送消息到AI失败');
     }
   }

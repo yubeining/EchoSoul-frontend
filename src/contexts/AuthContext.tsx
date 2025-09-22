@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authApi, tokenManager, UserInfo, LoginRequest, RegisterRequest } from '../services/api';
+import { error as logError } from '../utils/logger';
 
 // 认证上下文类型
 interface AuthContextType {
@@ -55,7 +56,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           }
         }
       } catch (error) {
-        console.error('初始化认证失败:', error);
+        logError('初始化认证失败:', error);
         tokenManager.removeToken();
       } finally {
         setIsLoading(false);
@@ -86,7 +87,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         throw new Error(response.msg);
       }
     } catch (error) {
-      console.error('登录失败:', error);
+      logError('登录失败:', error);
       return false;
     } finally {
       setIsLoading(false);
@@ -111,7 +112,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         throw new Error(response.msg);
       }
     } catch (error) {
-      console.error('注册失败:', error);
+      logError('注册失败:', error);
       return false;
     } finally {
       setIsLoading(false);
@@ -124,7 +125,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // 调用后端登出接口
       await authApi.logout();
     } catch (error) {
-      console.error('登出请求失败:', error);
+      logError('登出请求失败:', error);
     } finally {
       // 无论后端请求是否成功，都清除本地状态
       tokenManager.removeToken();
@@ -142,7 +143,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setUser(response.data);
       }
     } catch (error) {
-      console.error('刷新用户信息失败:', error);
+      logError('刷新用户信息失败:', error);
     }
   };
 

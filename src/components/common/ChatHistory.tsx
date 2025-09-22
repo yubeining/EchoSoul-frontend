@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import '../../styles/components/ChatHistory.css';
 import { useChat, ChatHistoryItem } from '../../hooks/useChat';
 import { useAuth } from '../../contexts/AuthContext';
+import { debug, info, error as logError } from '../../utils/logger';
 
 interface ChatHistoryProps {
   onChatClick: (conversationId: string, userInfo: { id: string; nickname: string; avatar?: string }) => void;
@@ -23,10 +24,10 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
     const loadChatHistory = async () => {
       try {
         const history = await fetchConversations();
-        console.log('📋 ChatHistory: 获取到的聊天历史', history);
+        info('ChatHistory: 获取到的聊天历史', history);
         setChatList(history);
       } catch (err) {
-        console.error('获取聊天历史失败:', err);
+        logError('获取聊天历史失败:', err);
         setChatList([]);
       }
     };
@@ -42,7 +43,7 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
       const history = await fetchConversations();
       setChatList(history);
     } catch (err) {
-      console.error('刷新聊天记录失败:', err);
+      logError('刷新聊天记录失败:', err);
     } finally {
       setIsRefreshing(false);
     }
@@ -158,7 +159,7 @@ const ChatHistory: React.FC<ChatHistoryProps> = ({
         ) : (
           filteredChatList.map((chat) => {
             const handleChatItemClick = () => {
-              console.log('🔄 ChatHistory: 点击聊天项', {
+              debug('ChatHistory: 点击聊天项', {
                 conversationId: chat.id,
                 userInfo: {
                   id: chat.user.id,

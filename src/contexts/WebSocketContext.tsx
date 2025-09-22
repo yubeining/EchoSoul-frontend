@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import { webSocketService, WebSocketEvents } from '../services/websocket';
 import { useAuth } from './AuthContext';
+import { warn, error as logError } from '../utils/logger';
 
 // WebSocket状态接口
 interface WebSocketState {
@@ -65,7 +66,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
   // 连接WebSocket
   const connect = useCallback(async (): Promise<void> => {
     if (!user) {
-      console.warn('⚠️ 用户未登录，无法连接WebSocket');
+      warn('用户未登录，无法连接WebSocket');
       return;
     }
 
@@ -77,7 +78,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       setState(prev => ({ ...prev, isConnecting: true, error: null }));
       
       // 使用用户ID连接WebSocket
-      await webSocketService.connect(user.id);
+      await webSocketService.connectWebSocket(user.id);
       
       setState(prev => ({
         ...prev,
@@ -96,7 +97,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
         error: errorMessage
       }));
       
-      console.error('❌ WebSocket连接失败:', error);
+      logError('WebSocket连接失败:', error);
     }
   }, [user, state.isConnected, state.isConnecting]);
 
@@ -118,7 +119,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
     message_type?: string;
   }): void => {
     if (!state.isConnected) {
-      console.warn('⚠️ WebSocket未连接，无法发送消息');
+      warn('WebSocket未连接，无法发送消息');
       return;
     }
     
@@ -149,7 +150,9 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       return;
     }
     
-    webSocketService.getOnlineStatus();
+    if (user?.id) {
+      webSocketService.getOnlineStatus(user.id);
+    }
   };
 
   // 事件监听
@@ -157,8 +160,8 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
     webSocketService.on(event, callback);
   };
 
-  const off = <K extends keyof WebSocketEvents>(event: K, callback?: WebSocketEvents[K]): void => {
-    webSocketService.off(event, callback);
+  const off = <K extends keyof WebSocketEvents>(event: K): void => {
+    webSocketService.off(event);
   };
 
   // 监听用户登录状态变化
@@ -208,9 +211,9 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
 
     // 清理函数
     return () => {
-      webSocketService.off('connect', handleConnect);
-      webSocketService.off('disconnect', handleDisconnect);
-      webSocketService.off('connect_error', handleError);
+      webSocketService.off('connect');
+      webSocketService.off('disconnect');
+      webSocketService.off('connect_error');
     };
   }, []);
 

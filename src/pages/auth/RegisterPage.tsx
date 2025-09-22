@@ -4,6 +4,7 @@ import Navigation from '../../components/layout/Navigation';
 import { useTranslation } from '../../contexts/TranslationContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { getPasswordStrength } from '../../utils/passwordUtils';
+import { error as logError } from '../../utils/logger';
 
 interface RegisterPageProps {
   onNavigate: (page: string) => void;
@@ -68,7 +69,7 @@ const RegisterPage: React.FC<RegisterPageProps> = ({
         alert('注册失败，请检查输入信息');
       }
     } catch (error) {
-      console.error('注册错误:', error);
+      logError('注册错误:', error);
       alert('注册失败，请稍后重试');
     }
   };

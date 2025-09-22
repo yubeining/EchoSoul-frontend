@@ -6,6 +6,7 @@ import { ChatUser, useChat } from '../../hooks/useChat';
 import { useAuth } from '../../contexts/AuthContext';
 import { useWebSocket } from '../../contexts/WebSocketContext';
 import { userApi, aiCharacterApi, aiChatApi, chatApi } from '../../services/api';
+import { error as logError } from '../../utils/logger';
 
 interface ChatPageProps {
   onNavigate: (page: string) => void;
@@ -41,7 +42,7 @@ const ChatPage: React.FC<ChatPageProps> = ({
   useEffect(() => {
     if (user && !isConnected) {
       connectWebSocket().catch(error => {
-        console.error('❌ WebSocket连接失败:', error);
+        logError('WebSocket连接失败:', error);
       });
     }
 
@@ -115,7 +116,7 @@ const ChatPage: React.FC<ChatPageProps> = ({
                 throw new Error('获取用户信息失败');
               }
             } catch (error) {
-              console.error('获取用户信息失败，使用传递的参数:', error);
+              logError('获取用户信息失败，使用传递的参数:', error);
               
               // 使用传递的参数作为后备
               const fallbackUserId = chatUserUid || 'unknown';
@@ -202,7 +203,7 @@ const ChatPage: React.FC<ChatPageProps> = ({
                   setCurrentConversationId(convResponse.data.conversation_id);
                 }
               } catch (err) {
-                console.error('获取会话失败:', err);
+                logError('获取会话失败:', err);
               }
             }
           } else {

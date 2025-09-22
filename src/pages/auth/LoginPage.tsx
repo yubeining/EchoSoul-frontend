@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import '../../styles/pages/LoginPage.css';
 import Navigation from '../../components/layout/Navigation';
 import { useAuth } from '../../contexts/AuthContext';
+import { error as logError } from '../../utils/logger';
 
 interface LoginPageProps {
   onNavigate: (page: string) => void;
@@ -50,7 +51,7 @@ const LoginPage: React.FC<LoginPageProps> = ({
         alert('登录失败，请检查用户名和密码');
       }
     } catch (error) {
-      console.error('登录错误:', error);
+      logError('登录错误:', error);
       alert('登录失败，请稍后重试');
     }
   };

@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, memo } from 'react';
 import '../../styles/components/ChatDialog.css';
 import { useChat, ChatMessageUI, ChatUser } from '../../hooks/useChat';
-// import { chatApi, aiCharacterApi } from '../../services/api';
+import { debug, info, warn, error as logError } from '../../utils/logger';
 
 interface ChatDialogProps {
   user: ChatUser;
@@ -22,7 +22,29 @@ const ChatDialog: React.FC<ChatDialogProps> = memo(({
   isOpen,
   isPageMode = false
 }) => {
+  // 防止重复调用getConversationById的ref
+  const isFetchingConversationRef = useRef<boolean>(false);
+  // 防抖定时器ref
+  const typingTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const [inputValue, setInputValue] = useState('');
+  
+  // 防抖发送输入状态
+  const debouncedSendTyping = (isTyping: boolean) => {
+    // 清除之前的定时器
+    if (typingTimeoutRef.current) {
+      clearTimeout(typingTimeoutRef.current);
+    }
+    
+    // 如果正在输入，立即发送
+    if (isTyping) {
+      sendTyping(true);
+    } else {
+      // 如果停止输入，延迟500ms后发送停止状态
+      typingTimeoutRef.current = setTimeout(() => {
+        sendTyping(false);
+      }, 500);
+    }
+  };
   const [messages, setMessages] = useState<ChatMessageUI[]>([]);
   const [loading, setLoading] = useState(false);
   const [sending, setSending] = useState(false);
@@ -43,9 +65,11 @@ const ChatDialog: React.FC<ChatDialogProps> = memo(({
     waitForAIResponse,
     isTyping,
     fetchConversations,
+    getConversationById,
     // AI WebSocket功能
     isAIWebSocketConnected,
     isAISessionActive,
+    aiConversationId,
     aiStreamingMessage,
     connectAI,
     startAISession,
@@ -63,9 +87,9 @@ const ChatDialog: React.FC<ChatDialogProps> = memo(({
   // 加载会话列表
   useEffect(() => {
     if (isOpen) {
-      console.log('🤖 ChatDialog: 加载会话列表...');
+      debug('ChatDialog: 加载会话列表...');
       fetchConversations().catch(error => {
-        console.error('❌ 加载会话列表失败:', error);
+        logError('加载会话列表失败:', error);
       });
     }
   }, [isOpen, fetchConversations]);
@@ -79,72 +103,113 @@ const ChatDialog: React.FC<ChatDialogProps> = memo(({
   // WebSocket会话管理
   useEffect(() => {
     if (conversationId && isOpen) {
-      // 检查是否是AI对话 - 基于会话信息判断
-      const isAIConversation = currentConversation && currentConversation.user2_id === 0;
-      
-      console.log('🤖 ChatDialog AI对话判断:', { 
-        conversationId, 
-        currentConversation, 
-        user2_id: currentConversation?.user2_id,
-        isAIConversation,
-        isAIWebSocketConnected 
-      });
-      
-      if (isAIConversation) {
-        // AI对话：连接AI WebSocket并开始会话
-        if (!isAIWebSocketConnected) {
-          console.log('🤖 尝试连接AI WebSocket...');
-          connectAI().catch(error => {
-            console.error('❌ AI WebSocket连接失败:', error);
+      // 先获取会话详情，然后判断是否是AI对话
+      const checkAndHandleConversation = async () => {
+        try {
+          // 如果currentConversation为空，先获取会话详情
+          let conversationToCheck = currentConversation;
+          if (!conversationToCheck && !isFetchingConversationRef.current) {
+            debug('currentConversation为空，尝试获取会话详情:', conversationId);
+            isFetchingConversationRef.current = true;
+            try {
+              conversationToCheck = await getConversationById(conversationId);
+              if (conversationToCheck) {
+                debug('获取到会话详情:', conversationToCheck);
+              }
+            } finally {
+              isFetchingConversationRef.current = false;
+            }
+          }
+          
+          // 检查是否是AI对话 - 通过多种方式判断
+          const isAIConversation = (
+            // 方式1：通过会话详情判断
+            (conversationToCheck && conversationToCheck.user2_id === 0) ||
+            // 方式3：通过当前AI会话状态判断
+            (isAISessionActive && aiConversationId === conversationId)
+          );
+          
+          debug('ChatDialog AI对话判断:', { 
+            conversationId, 
+            currentConversation: conversationToCheck, 
+            user2_id: conversationToCheck?.user2_id,
+            isAIConversation,
+            isAIWebSocketConnected,
+            isAISessionActive,
+            aiConversationId
           });
-        } else {
-          console.log('🤖 AI WebSocket已连接，跳过连接步骤');
-        }
-        
-        // 设置AI会话ID
-        setAIConversationId(conversationId);
-        // 同时设置当前会话ID，确保currentConversation被正确设置
-        setCurrentConversationId(conversationId);
-        
-        // 获取AI角色信息并开始会话
-        const initializeAISession = async () => {
-          try {
-            console.log('🤖 初始化AI会话 - 接收到的参数:', { characterId, user: user.id });
-            
-            let aiCharacterId = characterId;
-            
-        
-            
-            // 如果还是没有，尝试通过API获取角色详情
-            if (!aiCharacterId) {
-              console.log('🤖 尝试通过API获取AI角色信息...');
-              // 这里可以添加获取角色信息的逻辑
-              // 暂时使用默认值
-              aiCharacterId = 'char_001';
-              console.log('🤖 使用默认AI角色ID:', aiCharacterId);
+          
+          if (isAIConversation) {
+            // AI对话：连接AI WebSocket并开始会话
+            if (!isAIWebSocketConnected) {
+              info('尝试连接AI WebSocket...');
+              connectAI().catch(error => {
+                logError('AI WebSocket连接失败:', error);
+              });
+            } else {
+              debug('AI WebSocket已连接，跳过连接步骤');
             }
             
-            console.log('🤖 开始AI会话:', { aiCharacterId, conversationId, isAIWebSocketConnected });
-            startAISession(aiCharacterId, conversationId);
-          } catch (error) {
-            console.error('❌ 初始化AI会话失败:', error);
-            // 回退到默认角色ID
-            const aiCharacterId = 'char_001';
-            startAISession(aiCharacterId, conversationId);
+            // 设置AI会话ID
+            setAIConversationId(conversationId);
+            // 同时设置当前会话ID，确保currentConversation被正确设置
+            setCurrentConversationId(conversationId);
+            
+            // 获取AI角色信息并开始会话
+            const initializeAISession = async () => {
+              try {
+                debug('初始化AI会话 - 接收到的参数:', { characterId, user: user.id });
+                
+                let aiCharacterId = characterId;
+                
+                // 如果还是没有，尝试通过API获取角色详情
+                if (!aiCharacterId) {
+                  debug('尝试通过API获取AI角色信息...');
+                  // 这里可以添加获取角色信息的逻辑
+                  // 暂时使用默认值
+                  aiCharacterId = 'char_001';
+                  debug('使用默认AI角色ID:', aiCharacterId);
+                }
+                
+                info('开始AI会话:', { aiCharacterId, conversationId, isAIWebSocketConnected });
+                startAISession(aiCharacterId, conversationId);
+              } catch (error) {
+                logError('初始化AI会话失败:', error);
+                // 回退到默认角色ID
+                const aiCharacterId = 'char_001';
+                startAISession(aiCharacterId, conversationId);
+              }
+            };
+            
+            initializeAISession();
+            
+            // 加载AI对话历史
+            getAIHistory(conversationId);
+          } else {
+            // 普通用户对话：使用原有逻辑
+            setCurrentConversationId(conversationId);
+            loadHistory(conversationId);
           }
-        };
-        
-        initializeAISession();
-        
-        // 加载AI对话历史
-        getAIHistory(conversationId);
-      } else {
-        // 普通用户对话：使用原有逻辑
-        setCurrentConversationId(conversationId);
-        loadHistory(conversationId);
-      }
+        } catch (error) {
+          logError('检查会话类型失败:', error);
+          // 发生错误时，默认按普通用户对话处理
+          setCurrentConversationId(conversationId);
+          loadHistory(conversationId);
+        }
+      };
+      
+      checkAndHandleConversation();
     }
-  }, [conversationId, isOpen, setCurrentConversationId, loadHistory, connectAI, setAIConversationId, startAISession, getAIHistory, user.id, currentConversation, characterId]); // eslint-disable-line react-hooks/exhaustive-deps
+  }, [conversationId, isOpen, setCurrentConversationId, loadHistory, connectAI, setAIConversationId, getAIHistory, user.id, currentConversation, characterId, isAISessionActive, aiConversationId, getConversationById, isAIWebSocketConnected]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // 清理定时器
+  useEffect(() => {
+    return () => {
+      if (typingTimeoutRef.current) {
+        clearTimeout(typingTimeoutRef.current);
+      }
+    };
+  }, []);
 
   // 设置对方用户信息
   useEffect(() => {
@@ -163,12 +228,15 @@ const ChatDialog: React.FC<ChatDialogProps> = memo(({
   // 监听currentMessages的变化，同步到本地messages状态
   useEffect(() => {
     if (currentMessages.length > 0) {
-      console.log('🔄 ChatDialog: 接收到新消息列表:', currentMessages.map(m => ({ 
-        id: m.id, 
-        content: m.content, 
-        senderName: m.senderName, 
-        timestamp: m.timestamp 
-      })));
+      // 只在消息数量变化时记录日志，避免流式更新时的频繁日志
+      if (currentMessages.length !== messages.length) {
+        debug('ChatDialog: 接收到新消息列表:', currentMessages.map(m => ({ 
+          id: m.id, 
+          content: m.content, 
+          senderName: m.senderName, 
+          timestamp: m.timestamp 
+        })));
+      }
       setMessages(currentMessages);
     }
   }, [currentMessages, messages.length]);
@@ -182,7 +250,7 @@ const ChatDialog: React.FC<ChatDialogProps> = memo(({
           await fetchMessages(conversationId);
           setMessagesLoaded(true);
         } catch (error) {
-          console.error('❌ 获取消息失败，使用模拟数据:', error);
+          logError('获取消息失败，使用模拟数据:', error);
           // 使用模拟消息数据作为备用
           const mockMessages: ChatMessageUI[] = [
             {
@@ -259,22 +327,29 @@ const ChatDialog: React.FC<ChatDialogProps> = memo(({
     setSending(true);
     
     try {
-      // 检查是否是AI对话 - 基于会话信息判断
-      const isAIConversation = currentConversation && currentConversation.user2_id === 0;
+      // 检查是否是AI对话 - 通过多种方式判断
+      const isAIConversation = (
+        // 方式1：通过currentConversation判断
+        (currentConversation && currentConversation.user2_id === 0) ||
+        // 方式2：通过conversationId判断（AI对话的conversationId通常包含特定标识）
+        (conversationId && conversationId.includes('ai_')) ||
+        // 方式3：通过当前AI会话状态判断
+        (isAISessionActive && conversationId)
+      );
       
       if (isAIConversation && isAIWebSocketConnected && isAISessionActive) {
-        // 使用AI WebSocket发送消息
-        console.log('🤖 通过AI WebSocket发送消息:', content);
+        // 使用AI WebSocket发送消息（AI WebSocket服务端会处理消息保存到数据库）
+        info('通过AI WebSocket发送消息:', content);
         sendAIMessage(content, 'text');
         
         // 显示AI思考状态
         setWaitingForAI(true);
-        console.log('🤖 显示AI思考状态...');
+        debug('显示AI思考状态...');
         
         // AI流式回复会通过useChat hook自动处理，不需要手动等待
       } else if (isAIConversation) {
         // AI对话但WebSocket未连接，回退到HTTP
-        console.log('🤖 AI WebSocket未连接，使用HTTP发送消息');
+        warn('AI WebSocket未连接，使用HTTP发送消息');
         const sentMessage = await sendMessage(conversationId, content, 'text');
         
         if (sentMessage) {
@@ -282,14 +357,17 @@ const ChatDialog: React.FC<ChatDialogProps> = memo(({
           try {
             await waitForAIResponse(conversationId, user.id);
           } catch (error) {
-            console.error('❌ 等待AI回复失败:', error);
+            logError('等待AI回复失败:', error);
           } finally {
             setWaitingForAI(false);
           }
         }
       } else {
         // 普通用户对话
-        await sendMessage(conversationId, content, 'text');
+        const sentMessage = await sendMessage(conversationId, content, 'text');
+        if (sentMessage) {
+          debug('用户消息发送成功:', sentMessage);
+        }
       }
       
       // 如果提供了外部发送消息回调，也调用它
@@ -297,7 +375,7 @@ const ChatDialog: React.FC<ChatDialogProps> = memo(({
         onSendMessage(content);
       }
     } catch (error) {
-      console.error('发送消息失败:', error);
+      logError('发送消息失败:', error);
       // 发送失败时恢复输入内容
       setInputValue(content);
       setWaitingForAI(false);
@@ -485,8 +563,8 @@ const ChatDialog: React.FC<ChatDialogProps> = memo(({
             value={inputValue}
             onChange={(e) => {
               setInputValue(e.target.value);
-              // 发送输入状态
-              sendTyping(e.target.value.length > 0);
+              // 使用防抖发送输入状态
+              debouncedSendTyping(e.target.value.length > 0);
             }}
             onKeyPress={handleKeyPress}
             disabled={sending}

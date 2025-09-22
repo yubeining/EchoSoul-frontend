@@ -3,6 +3,7 @@ import { chatApi, Conversation, ChatMessage } from '../services/api';
 import { useAuth } from '../contexts/AuthContext';
 import { useWebSocket } from '../contexts/WebSocketContext';
 import { useAIWebSocket } from '../contexts/AIWebSocketContext';
+import { debug, info, warn, error as logError } from '../utils/logger';
 
 // 聊天历史项接口（用于聊天记录列表）
 export interface ChatHistoryItem {
@@ -104,7 +105,7 @@ export const useChat = () => {
 
     // 监听新消息
     const handleNewMessage = (data: any) => {
-      console.log('📨 WebSocket收到新消息:', data);
+      info('WebSocket收到新消息:', data);
       
       // 使用统一的AI消息识别逻辑
       const tempMessage: ChatMessage = {
@@ -130,7 +131,7 @@ export const useChat = () => {
       // 使用convertToUIMessage转换消息格式
       const newMessage = convertToUIMessage(tempMessage);
       
-      console.log('🔄 转换后的消息:', { newMessage, userId: user?.id, senderId: data.sender_id });
+      debug('转换后的消息:', { newMessage, userId: user?.id, senderId: data.sender_id });
       
       // 如果是当前会话的消息
       if (data.conversation_id === currentConversationIdRef.current) {
@@ -150,16 +151,16 @@ export const useChat = () => {
               // 替换临时消息
               updatedMessages = [...prev];
               updatedMessages[tempMessageIndex] = newMessage;
-              console.log('✅ 替换临时消息:', { tempMessageIndex, newMessage });
+              debug('替换临时消息:', { tempMessageIndex, newMessage });
             } else {
               // 没有找到临时消息，直接添加
               updatedMessages = [...prev, newMessage];
-              console.log('➕ 添加当前用户消息:', newMessage);
+              debug('添加当前用户消息:', newMessage);
             }
           } else {
             // 对方消息，直接添加
             updatedMessages = [...prev, newMessage];
-            console.log('➕ 添加对方消息:', newMessage);
+            debug('添加对方消息:', newMessage);
           }
           
           // 重新按时间排序（从早到晚）
@@ -169,7 +170,7 @@ export const useChat = () => {
             return timeA - timeB;
           });
           
-          console.log('📋 排序后的消息列表:', sortedMessages.map(m => ({ 
+          debug('排序后的消息列表:', sortedMessages.map(m => ({ 
             id: m.id, 
             content: m.content, 
             senderName: m.senderName, 
@@ -189,7 +190,7 @@ export const useChat = () => {
 
     // 监听响应消息
     const handleResponse = (data: any) => {
-      console.log('📥 WebSocket收到响应:', data);
+      debug('WebSocket收到响应:', data);
       
       if (data.original_type === 'get_history' && data.result.success) {
         // 处理历史消息，使用统一的AI消息识别逻辑
@@ -223,7 +224,7 @@ export const useChat = () => {
           return timeA - timeB;
         });
         
-        console.log('📋 WebSocket历史消息:', sortedMessages.map((m: ChatMessageUI) => ({ 
+        debug('WebSocket历史消息:', sortedMessages.map((m: ChatMessageUI) => ({ 
           id: m.id, 
           content: m.content, 
           senderName: m.senderName, 
@@ -265,7 +266,7 @@ export const useChat = () => {
     
     // 防止重复调用
     if (isFetchingRef.current) {
-      console.log('🔄 正在获取会话列表中，跳过重复调用');
+      debug('正在获取会话列表中，跳过重复调用');
       return [];
     }
     
@@ -275,13 +276,13 @@ export const useChat = () => {
     
     try {
       const response = await chatApi.getConversations();
-      console.log('📞 获取会话列表响应:', response);
+      debug('获取会话列表响应:', response);
       
       if (response.code === 200 || response.code === 1) {
         // 根据API响应结构，data.conversations 包含会话数组
         const conversationsData = response.data.conversations || [];
         
-        console.log('📋 处理后的会话数据:', conversationsData);
+        debug('处理后的会话数据:', conversationsData);
         setConversations(conversationsData);
         
         // 直接转换为聊天历史项，避免重复调用
@@ -307,14 +308,14 @@ export const useChat = () => {
           };
         });
         
-        console.log('✅ 聊天历史转换完成，数量:', chatHistoryItems.length);
+        info('聊天历史转换完成，数量:', chatHistoryItems.length);
         setError(null);
         return chatHistoryItems;
       } else {
         throw new Error(response.msg || '获取会话列表失败');
       }
     } catch (err) {
-      console.error('❌ 获取会话列表失败:', err);
+      logError('获取会话列表失败:', err);
       const errorMessage = err instanceof Error ? err.message : '获取会话列表失败';
       setError(errorMessage);
       return [];
@@ -354,8 +355,33 @@ export const useChat = () => {
         throw new Error(response.msg || '获取会话失败');
       }
     } catch (err) {
-      console.error('获取会话失败:', err);
+      logError('获取会话失败:', err);
       setError(err instanceof Error ? err.message : '获取会话失败');
+      return null;
+    } finally {
+      setLoading(false);
+    }
+  }, [user]);
+
+  // 根据会话ID获取会话详情
+  const getConversationById = useCallback(async (conversationId: string): Promise<Conversation | null> => {
+    if (!user) return null;
+    
+    setLoading(true);
+    setError(null);
+    
+    try {
+      const response = await chatApi.getConversationById(conversationId);
+      if (response.code === 200 || response.code === 1) {
+        const conversation = response.data;
+        setCurrentConversation(conversation);
+        return conversation;
+      } else {
+        throw new Error(response.msg || '获取会话详情失败');
+      }
+    } catch (err) {
+      logError('获取会话详情失败:', err);
+      setError(err instanceof Error ? err.message : '获取会话详情失败');
       return null;
     } finally {
       setLoading(false);
@@ -446,11 +472,11 @@ export const useChat = () => {
           } else if (Array.isArray(dataObj.data)) {
             messagesArray = dataObj.data;
           } else {
-            console.warn('⚠️ 无法从响应对象中提取消息数组，使用空数组');
+            warn('无法从响应对象中提取消息数组，使用空数组');
             messagesArray = [];
           }
         } else {
-          console.warn('⚠️ 无法从响应中提取消息数组，使用空数组');
+          warn('无法从响应中提取消息数组，使用空数组');
           messagesArray = [];
         }
         
@@ -464,7 +490,7 @@ export const useChat = () => {
           return timeA - timeB;
         });
         
-        console.log('📋 HTTP API历史消息:', sortedMessages.map(m => ({ 
+        debug('HTTP API历史消息:', sortedMessages.map(m => ({ 
           id: m.id, 
           content: m.content, 
           senderName: m.senderName, 
@@ -477,7 +503,7 @@ export const useChat = () => {
         throw new Error(response.msg || '获取消息失败');
       }
     } catch (err) {
-      console.error('获取消息失败:', err);
+      logError('获取消息失败:', err);
       setError(err instanceof Error ? err.message : '获取消息失败');
       return [];
     } finally {
@@ -497,10 +523,15 @@ export const useChat = () => {
   ) => {
     if (!user) return null;
     
-    // 检查是否是AI对话 - 通过当前用户信息判断
-    const isAIConversation = currentConversation && currentConversation.user2_id === 0;
+    // 检查是否是AI对话 - 通过多种方式判断
+    const isAIConversation = (
+      // 方式1：通过currentConversation判断
+      (currentConversation && currentConversation.user2_id === 0) ||
+      // 方式2：通过当前AI会话状态判断
+      (isAISessionActive && aiConversationId === conversationId)
+    );
     
-    console.log('🤖 消息发送判断:', { 
+    debug('消息发送判断:', { 
       isAIConversation, 
       currentConversation, 
       user2_id: currentConversation?.user2_id,
@@ -513,7 +544,7 @@ export const useChat = () => {
     
     // 如果是AI对话且AI WebSocket已连接，使用AI WebSocket发送
     if (isAIConversation && isAIConnected && isAISessionActive) {
-      console.log('🤖 发送AI消息:', { content, currentAICharacter, aiCharacterId: currentAICharacter?.character_id });
+      info('发送AI消息:', { content, currentAICharacter, aiCharacterId: currentAICharacter?.character_id });
       try {
         // 创建临时消息ID
         const tempMessageId = `temp_${Date.now()}`;
@@ -534,12 +565,15 @@ export const useChat = () => {
         // 立即显示发送的消息
         setCurrentMessages(prev => [...prev, tempMessage]);
         
-        // 通过AI WebSocket发送消息
+        // 通过AI WebSocket发送消息（AI WebSocket服务端会处理消息保存到数据库）
         sendAIMessage(content, messageType);
+        
+        // AI WebSocket会通过user_message_sent事件返回保存后的消息信息
+        // 临时消息会在收到user_message_sent事件时被替换为正式消息
         
         return tempMessage;
       } catch (err) {
-        console.error('AI WebSocket发送消息失败:', err);
+        logError('AI WebSocket发送消息失败:', err);
         // 回退到HTTP请求
       }
     }
@@ -577,7 +611,7 @@ export const useChat = () => {
         
         return tempMessage;
       } catch (err) {
-        console.error('WebSocket发送消息失败:', err);
+        logError('WebSocket发送消息失败:', err);
         // WebSocket失败，回退到HTTP
       }
     }
@@ -608,12 +642,12 @@ export const useChat = () => {
         // 检查是否是发给AI的消息，如果是则等待AI回复
         const messageType = getMessageType(response.data);
         if (messageType.type === 'user_to_ai' && messageType.aiCharacterId) {
-          console.log('🤖 检测到发给AI的消息，开始等待AI回复...');
+          info('检测到发给AI的消息，开始等待AI回复...');
           // 异步等待AI回复，不阻塞UI
           setTimeout(() => {
             if (waitForAIResponseRef.current) {
               waitForAIResponseRef.current(conversationId, messageType.aiCharacterId || '').catch(error => {
-                console.error('❌ 等待AI回复失败:', error);
+                logError('等待AI回复失败:', error);
               });
             }
           }, 100);
@@ -624,11 +658,11 @@ export const useChat = () => {
         throw new Error(response.msg || '发送消息失败');
       }
     } catch (err) {
-      console.error('发送消息失败:', err);
+      logError('发送消息失败:', err);
       setError(err instanceof Error ? err.message : '发送消息失败');
       return null;
     }
-  }, [user, isConnected, wsSendMessage, convertToUIMessage, getMessageType, isAIConnected, isAISessionActive, currentAICharacter, sendAIMessage, currentConversation]);
+  }, [user, isConnected, wsSendMessage, convertToUIMessage, getMessageType, isAIConnected, isAISessionActive, currentAICharacter, sendAIMessage, currentConversation, aiConversationId]);
 
   // 将会话转换为聊天历史项格式
   const convertToChatHistoryItem = useCallback((conversation: Conversation, currentUserId: number): ChatHistoryItem => {
@@ -677,10 +711,13 @@ export const useChat = () => {
         // 使用 setTimeout 确保状态更新在下一个事件循环中执行
         setTimeout(() => {
           setCurrentConversation(foundConversation);
-          console.log('🤖 设置当前会话:', foundConversation);
+          // 只在会话真正变化时记录日志，避免重复日志
+          if (currentConversation?.conversation_id !== foundConversation.conversation_id) {
+            debug('设置当前会话:', foundConversation);
+          }
         }, 0);
       } else {
-        console.log('🤖 未找到会话:', conversationId, '当前会话列表:', prev);
+        debug('未找到会话:', conversationId, '当前会话列表:', prev);
       }
       return prev;
     });
@@ -712,7 +749,7 @@ export const useChat = () => {
     const maxAttempts = 30; // 最多等待30秒
     const interval = 1000;  // 每秒检查一次
     
-    console.log('🤖 开始等待AI回复...', { conversationId, aiCharacterId });
+    info('开始等待AI回复...', { conversationId, aiCharacterId });
     
     for (let i = 0; i < maxAttempts; i++) {
       await new Promise(resolve => setTimeout(resolve, interval));
@@ -736,11 +773,11 @@ export const useChat = () => {
           }
           
           if (latestMessage) {
-            console.log('🔍 检查最新消息:', latestMessage);
+            debug('检查最新消息:', latestMessage);
             
             // 检查是否是AI回复
             if (latestMessage.is_ai_message && latestMessage.ai_character_id === aiCharacterId) {
-              console.log('✅ 收到AI回复:', latestMessage);
+              info('收到AI回复:', latestMessage);
               
               // 将AI回复添加到消息列表
               const aiMessage = convertToUIMessage(latestMessage);
@@ -758,11 +795,11 @@ export const useChat = () => {
           }
         }
       } catch (error) {
-        console.error('❌ 获取AI回复失败:', error);
+        logError('获取AI回复失败:', error);
       }
     }
     
-    console.log('⏰ AI回复等待结束');
+    debug('AI回复等待结束');
   }, [convertToUIMessage]);
 
   // 更新 waitForAIResponse ref
@@ -809,24 +846,32 @@ export const useChat = () => {
   // 处理用户消息已发送通知
   useEffect(() => {
     if (userMessageSent) {
-      console.log('📤 收到用户消息已发送通知:', userMessageSent);
+      info('收到用户消息已发送通知:', userMessageSent);
       
-      // 检查是否已经存在相同的消息（避免重复添加）
+      // 通过内容和发送者匹配来替换临时消息
       setCurrentMessages(prev => {
-        const existingIndex = prev.findIndex(msg => msg.id === userMessageSent.id);
+        // 查找匹配的临时消息（通过内容和发送者ID匹配）
+        const tempMessageIndex = prev.findIndex(msg => 
+          msg.id.startsWith('temp_') && 
+          msg.content === userMessageSent.content && 
+          msg.senderId === userMessageSent.senderId
+        );
         
-        if (existingIndex >= 0) {
-          // 如果消息已存在，更新为正式消息（替换临时消息）
+        if (tempMessageIndex !== -1) {
+          // 替换临时消息为正式消息
           const updatedMessages = [...prev];
-          updatedMessages[existingIndex] = {
-            ...updatedMessages[existingIndex],
+          updatedMessages[tempMessageIndex] = {
+            ...updatedMessages[tempMessageIndex],
             id: userMessageSent.id,
             timestamp: userMessageSent.timestamp,
+            type: userMessageSent.type,
             // 保持其他属性不变
           };
+          debug('替换临时消息为正式消息:', { tempMessageIndex, newMessage: updatedMessages[tempMessageIndex] });
           return updatedMessages;
         } else {
-          // 添加新消息
+          // 没有找到匹配的临时消息，直接添加
+          debug('添加新的正式消息:', userMessageSent);
           return [...prev, userMessageSent];
         }
       });
@@ -860,6 +905,7 @@ export const useChat = () => {
     // 方法
     fetchConversations,
     getOrCreateConversation,
+    getConversationById,
     fetchMessages,
     sendMessage,
     clearCurrentChat,

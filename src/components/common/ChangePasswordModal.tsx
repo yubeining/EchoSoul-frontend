@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import '../../styles/components/ChangePasswordModal.css';
 import { authApi } from '../../services/api';
+import { error as logError } from '../../utils/logger';
 
 interface ChangePasswordModalProps {
   isOpen: boolean;
@@ -89,8 +90,8 @@ const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
         setError(response.msg || '密码修改失败');
       }
     } catch (error: any) {
-      console.error('修改密码失败:', error);
-      console.error('错误详情:', {
+      logError('修改密码失败:', error);
+      logError('错误详情:', {
         message: error.message,
         response: error.response,
         stack: error.stack

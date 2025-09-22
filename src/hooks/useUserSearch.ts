@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { userApi } from '../services/api';
+import { error as logError } from '../utils/logger';
 
 export interface UserSearchResult {
   id: number;
@@ -44,7 +45,7 @@ export const useUserSearch = (options: UseUserSearchOptions = {}) => {
         const response = await userApi.searchUsers(query);
         setResults(response.data.users);
       } catch (err) {
-        console.error('用户搜索失败:', err);
+        logError('用户搜索失败:', err);
         setError(err instanceof Error ? err.message : '搜索失败');
         setResults([]);
       } finally {

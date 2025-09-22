@@ -1,3 +1,6 @@
+import { BaseWebSocketService } from './BaseWebSocketService';
+import { aiDebug, aiInfo, aiError } from '../utils/logger';
+
 // AI WebSocket服务类
 export interface AIWebSocketMessage {
   type: string;
@@ -9,6 +12,8 @@ export interface AICharacter {
   nickname: string;
   description: string;
   personality: string;
+  speaking_style?: string;
+  usage_count?: number;
   avatar?: string;
 }
 
@@ -39,96 +44,117 @@ export interface AIWebSocketEvents {
   close: (event: CloseEvent) => void;
 }
 
-export class AIWebSocketService {
-  private ws: WebSocket | null = null;
-  private url: string;
+export class AIWebSocketService extends BaseWebSocketService {
   private userId: string;
-  private reconnectAttempts = 0;
-  private maxReconnectAttempts = 5;
-  private reconnectInterval = 3000;
-  private heartbeatInterval: ReturnType<typeof setInterval> | null = null;
   private eventListeners: Partial<AIWebSocketEvents> = {};
 
   constructor(userId: string, baseUrl: string = 'ws://localhost:8080', token?: string) {
+    // const urlParams = token ? `?token=${encodeURIComponent(token)}` : '';
+    const url = `${baseUrl}/api/ws/ai-chat/${userId}`;
+    super(url);
     this.userId = userId;
-    // 如果有token，添加到URL参数中
-    const urlParams = token ? `?token=${encodeURIComponent(token)}` : '';
-    this.url = `${baseUrl}/api/ws/ai-chat/${userId}${urlParams}`;
   }
 
-  // 连接WebSocket
-  connect(): Promise<void> {
-    return new Promise((resolve, reject) => {
-      try {
-        this.ws = new WebSocket(this.url);
-        
-        this.ws.onopen = () => {
-          console.log('🤖 AI WebSocket连接已建立');
-          this.reconnectAttempts = 0;
-          this.startHeartbeat();
-          resolve();
-        };
+  protected getServiceName(): string {
+    return 'AI';
+  }
 
-        this.ws.onmessage = (event) => {
-          try {
-            const data = JSON.parse(event.data);
-            this.handleMessage(data);
-          } catch (error) {
-            console.error('解析WebSocket消息失败:', error);
-          }
-        };
+  protected handleMessage(data: any): void {
+    try {
+      switch (data.type) {
+        case 'connection_established':
+          aiInfo('AI WebSocket连接已建立:', data);
+          this.emit('connection_established', data);
+          break;
 
-        this.ws.onerror = (error) => {
-          console.error('AI WebSocket错误:', error);
-          this.eventListeners.error?.(error);
-        };
+        case 'ai_session_started':
+          // AI会话开始日志在AIWebSocketContext中记录，避免重复
+          this.emit('ai_session_started', data);
+          break;
 
-        this.ws.onclose = (event) => {
-          console.log('AI WebSocket连接已关闭:', event.code, event.reason);
-          this.stopHeartbeat();
-          this.eventListeners.close?.(event);
-          
-          // 自动重连
-          if (this.reconnectAttempts < this.maxReconnectAttempts) {
-            this.reconnectAttempts++;
-            console.log(`尝试重连AI WebSocket (${this.reconnectAttempts}/${this.maxReconnectAttempts})`);
-            setTimeout(() => {
-              this.connect().catch(console.error);
-            }, this.reconnectInterval);
-          }
-        };
-      } catch (error) {
-        reject(error);
+        case 'user_message_sent':
+          aiInfo('用户消息已发送:', data);
+          this.emit('user_message_sent', data);
+          break;
+
+        case 'ai_stream_start':
+          aiInfo('AI流式回复开始:', data);
+          this.emit('ai_stream_start', data);
+          break;
+
+        case 'ai_stream_chunk':
+          // 流式回复片段日志在AIWebSocketContext中记录，避免重复
+          this.emit('ai_stream_chunk', data);
+          break;
+
+        case 'ai_stream_end':
+          aiInfo('AI流式回复结束:', data);
+          this.emit('ai_stream_end', data);
+          break;
+
+        case 'ai_error':
+          aiError('AI错误:', data);
+          this.emit('ai_error', data);
+          break;
+
+        case 'response':
+          // 响应日志在AIWebSocketContext中记录，避免重复
+          this.emit('response', data);
+          break;
+
+        case 'conversation_history':
+          aiInfo('收到对话历史:', data);
+          this.emit('conversation_history', data);
+          break;
+
+        case 'ai_characters':
+          aiInfo('收到AI角色列表:', data);
+          this.emit('ai_characters', data);
+          break;
+
+        default:
+          aiDebug('收到AI WebSocket消息:', data);
+          break;
       }
-    });
-  }
-
-  // 断开连接
-  disconnect(): void {
-    this.stopHeartbeat();
-    if (this.ws) {
-      this.ws.close();
-      this.ws = null;
+    } catch (error) {
+      aiError('处理AI WebSocket消息失败:', error);
     }
   }
 
-  // 发送消息
-  send(message: AIWebSocketMessage): void {
-    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
-      console.log('🤖 发送AI WebSocket消息:', message);
-      this.ws.send(JSON.stringify(message));
-    } else {
-      console.error('AI WebSocket未连接，无法发送消息');
+  // 事件监听
+  on<K extends keyof AIWebSocketEvents>(event: K, callback: AIWebSocketEvents[K]): void {
+    this.eventListeners[event] = callback;
+  }
+
+  // 移除事件监听
+  off<K extends keyof AIWebSocketEvents>(event: K): void {
+    delete this.eventListeners[event];
+  }
+
+  // 触发事件
+  private emit<K extends keyof AIWebSocketEvents>(event: K, ...args: Parameters<AIWebSocketEvents[K]>): void {
+    const callback = this.eventListeners[event];
+    if (callback) {
+      try {
+        (callback as any)(...args);
+      } catch (error) {
+        aiError(`AI WebSocket事件监听器执行失败 (${event}):`, error);
+      }
     }
   }
 
   // 开始AI会话
   startAISession(aiCharacterId: string, conversationId?: string): void {
-    this.send({
+    const message: AIWebSocketMessage = {
       type: 'start_ai_session',
-      ai_character_id: aiCharacterId,
-      conversation_id: conversationId
-    });
+      ai_character_id: aiCharacterId
+    };
+    
+    if (conversationId) {
+      message.conversation_id = conversationId;
+    }
+    
+    this.send(message);
   }
 
   // 结束AI会话
@@ -139,7 +165,7 @@ export class AIWebSocketService {
   }
 
   // 发送聊天消息
-  sendChatMessage(content: string, messageType: string = 'text', conversationId: string, aiCharacterId?: string): void {
+  sendChatMessage(content: string, messageType: string = 'text', conversationId: string, userId: string, aiCharacterId?: string): void {
     const message: any = {
       type: 'chat_message',
       content,
@@ -156,11 +182,10 @@ export class AIWebSocketService {
   }
 
   // 获取对话历史
-  getConversationHistory(conversationId: string, page: number = 1, limit: number = 20): void {
+  getConversationHistory(conversationId: string, limit: number = 20): void {
     this.send({
       type: 'get_conversation_history',
       conversation_id: conversationId,
-      page,
       limit
     });
   }
@@ -172,73 +197,31 @@ export class AIWebSocketService {
     });
   }
 
-  // 发送心跳
-  private sendHeartbeat(): void {
-    this.send({
-      type: 'ping'
-    });
-  }
-
-  // 开始心跳
-  private startHeartbeat(): void {
-    this.heartbeatInterval = setInterval(() => {
-      this.sendHeartbeat();
-    }, 30000); // 每30秒发送一次心跳
-  }
-
-  // 停止心跳
-  private stopHeartbeat(): void {
-    if (this.heartbeatInterval) {
-      clearInterval(this.heartbeatInterval);
-      this.heartbeatInterval = null;
+  // 重写发送方法，添加AI专用日志
+  protected send(message: AIWebSocketMessage): void {
+    if (this.ws && this.ws.readyState === WebSocket.OPEN) {
+      // 只在非心跳消息时记录日志，减少日志噪音
+      if (message.type !== 'ping') {
+        // 记录重要消息的发送
+        if (message.type === 'chat_message' || message.type === 'start_ai_session') {
+          aiInfo('发送AI WebSocket消息:', message);
+        } else {
+          aiDebug('发送AI WebSocket消息:', message);
+        }
+      }
+      this.ws.send(JSON.stringify(message));
+    } else {
+      aiError('AI WebSocket未连接，无法发送消息');
     }
   }
 
-  // 处理接收到的消息
-  private handleMessage(data: any): void {
-    console.log('收到AI WebSocket消息:', data);
-    
-    const handler = this.eventListeners[data.type as keyof AIWebSocketEvents];
-    if (handler) {
-      handler(data);
+  // 重写心跳方法
+  protected sendHeartbeat(): void {
+    this.send({ type: 'ping' });
+    // 只在开发环境且每10次心跳记录一次日志，减少日志噪音
+    if (process.env.NODE_ENV === 'development' && Math.random() < 0.1) {
+      aiDebug('AI WebSocket心跳已发送');
     }
   }
 
-  // 添加事件监听器
-  on<K extends keyof AIWebSocketEvents>(event: K, handler: AIWebSocketEvents[K]): void {
-    this.eventListeners[event] = handler;
-  }
-
-  // 移除事件监听器
-  off<K extends keyof AIWebSocketEvents>(event: K): void {
-    delete this.eventListeners[event];
-  }
-
-  // 获取连接状态
-  get isConnected(): boolean {
-    return this.ws?.readyState === WebSocket.OPEN;
-  }
-
-  // 获取连接状态文本
-  get connectionState(): string {
-    if (!this.ws) return '未连接';
-    
-    switch (this.ws.readyState) {
-      case WebSocket.CONNECTING:
-        return '连接中';
-      case WebSocket.OPEN:
-        return '已连接';
-      case WebSocket.CLOSING:
-        return '关闭中';
-      case WebSocket.CLOSED:
-        return '已关闭';
-      default:
-        return '未知状态';
-    }
-  }
 }
-
-// 创建AI WebSocket服务实例的工厂函数
-export const createAIWebSocketService = (userId: string, baseUrl?: string, token?: string): AIWebSocketService => {
-  return new AIWebSocketService(userId, baseUrl, token);
-};
