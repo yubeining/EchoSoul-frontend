@@ -249,7 +249,7 @@ class ApiClient {
         const response = await fetch(url, {
           ...config,
           mode: 'cors', // 启用CORS
-          credentials: 'include', // 发送cookies和认证信息
+          credentials: 'omit', // 不发送cookies，使用JWT Token认证
           cache: 'no-cache', // 禁用缓存
           signal: controller.signal, // 添加超时控制
           headers: {
