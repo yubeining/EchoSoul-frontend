@@ -580,6 +580,13 @@ export const useChat = () => {
     
     // 优先使用WebSocket发送（普通用户对话）
     if (isConnected && !isAIConversation) {
+      info('使用WebSocket发送用户消息:', { 
+        isConnected, 
+        isAIConversation, 
+        conversationId, 
+        content: content.substring(0, 50) + '...' 
+      });
+      
       try {
         
         // 创建临时消息ID，用于后续替换
@@ -614,6 +621,12 @@ export const useChat = () => {
         logError('WebSocket发送消息失败:', err);
         // WebSocket失败，回退到HTTP
       }
+    } else {
+      warn('WebSocket发送条件不满足:', { 
+        isConnected, 
+        isAIConversation, 
+        conversationId 
+      });
     }
     
     // 回退到HTTP请求

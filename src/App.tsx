@@ -6,6 +6,7 @@ import RegisterPage from './pages/auth/RegisterPage';
 import DashboardPage from './pages/auth/DashboardPage';
 import ChatPage from './pages/auth/ChatPage';
 import Navigation from './components/layout/Navigation';
+import ErrorBoundary from './components/common/ErrorBoundary';
 import { AuthProvider } from './contexts/AuthContext';
 import { TranslationProvider } from './contexts/TranslationContext';
 import { WebSocketProvider } from './contexts/WebSocketContext';
@@ -266,15 +267,17 @@ function AppContent() {
 
 function App() {
   return (
-    <TranslationProvider>
-      <AuthProvider>
-        <WebSocketProvider>
-          <AIWebSocketProvider>
-            <AppContent />
-          </AIWebSocketProvider>
-        </WebSocketProvider>
-      </AuthProvider>
-    </TranslationProvider>
+    <ErrorBoundary>
+      <TranslationProvider>
+        <AuthProvider>
+          <WebSocketProvider>
+            <AIWebSocketProvider>
+              <AppContent />
+            </AIWebSocketProvider>
+          </WebSocketProvider>
+        </AuthProvider>
+      </TranslationProvider>
+    </ErrorBoundary>
   );
 }
 

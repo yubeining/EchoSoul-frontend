@@ -43,21 +43,44 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       try {
         const currentToken = tokenManager.getToken();
         setToken(currentToken);
+        
         if (currentToken) {
-          // 验证Token并获取用户信息
-          const response = await authApi.getUserInfo();
-          if (response.code === 1) {
-            setUser(response.data);
-            setIsAuthenticated(true);
-          } else {
-            // Token无效，清除
-            tokenManager.removeToken();
-            setToken(null);
+          try {
+            // 验证Token并获取用户信息
+            const response = await authApi.getUserInfo();
+            if (response.code === 1) {
+              setUser(response.data);
+              setIsAuthenticated(true);
+            } else {
+              // Token无效，清除
+              tokenManager.removeToken();
+              setToken(null);
+              setIsAuthenticated(false);
+            }
+          } catch (error: any) {
+            // 如果是401错误，说明token无效，静默处理
+            if (error.status === 401) {
+              tokenManager.removeToken();
+              setToken(null);
+              setIsAuthenticated(false);
+            } else {
+              // 其他错误才记录日志
+              logError('获取用户信息失败:', error);
+            }
           }
+        } else {
+          // 没有token，设置为未认证状态
+          setIsAuthenticated(false);
         }
-      } catch (error) {
-        logError('初始化认证失败:', error);
+      } catch (error: any) {
+        // 只有在非401错误时才记录日志
+        if (error && typeof error === 'object' && error.status !== 401) {
+          logError('初始化认证失败:', error);
+        }
+        // 确保清除无效token
         tokenManager.removeToken();
+        setToken(null);
+        setIsAuthenticated(false);
       } finally {
         setIsLoading(false);
         setIsInitialized(true);

@@ -385,9 +385,11 @@ export const AIWebSocketProvider: React.FC<AIWebSocketProviderProps> = ({ childr
   // 组件卸载时断开连接
   useEffect(() => {
     return () => {
-      disconnect();
+      if (aiWebSocketService) {
+        aiWebSocketService.disconnect();
+      }
     };
-  }, [disconnect]);
+  }, [aiWebSocketService]);
 
   const contextValue: AIWebSocketContextType = {
     ...state,

@@ -349,3 +349,62 @@
 .docs-sidebar::-webkit-scrollbar-thumb:hover {
   background: #94a3b8;
 }
+
+/* 代码块样式 */
+.code-block {
+  background: #f8f9fa;
+  border: 1px solid #e9ecef;
+  border-radius: 8px;
+  padding: 16px;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #333;
+  overflow-x: auto;
+  margin: 16px 0;
+  white-space: pre;
+}
+
+/* FAQ样式 */
+.faq-item {
+  margin-bottom: 24px;
+  padding: 16px;
+  background: #f8f9fa;
+  border-radius: 8px;
+  border-left: 4px solid #165DFF;
+}
+
+.faq-item h4 {
+  color: #165DFF;
+  margin-bottom: 8px;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.faq-item p {
+  margin: 0;
+  color: #666;
+  line-height: 1.6;
+}
+
+/* 列表样式 */
+.section-content ul {
+  margin: 16px 0;
+  padding-left: 24px;
+}
+
+.section-content li {
+  margin-bottom: 8px;
+  line-height: 1.6;
+}
+
+.section-content h3 {
+  color: #1f2937;
+  font-size: 18px;
+  font-weight: 600;
+  margin: 24px 0 16px 0;
+}
+
+.section-content h3:first-child {
+  margin-top: 0;
+}

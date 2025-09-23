@@ -191,7 +191,7 @@
   }
   
   .nav-right {
-    gap: 16px;
+    gap: 12px;
   }
   
   .logo-text {
@@ -203,21 +203,174 @@
     height: 36px;
     font-size: 14px;
   }
+  
+  /* 隐藏桌面端导航链接 */
+  .desktop-nav {
+    display: none;
+  }
+  
+  /* 确保语言选择器和GitHub按钮可见 */
+  .language-selector {
+    font-size: 12px;
+    padding: 6px 8px;
+  }
+  
+  .github-btn {
+    font-size: 12px;
+    padding: 6px 8px;
+  }
+  
+  .github-btn span {
+    display: none; /* 隐藏GitHub文字，只显示图标 */
+  }
+  
+  /* 确保用户头像可见 */
+  .nav-avatar {
+    margin-left: 4px;
+  }
 }
 
 @media (max-width: 480px) {
+  .nav-container {
+    padding: 0 12px;
+  }
+  
   .nav-right {
-    gap: 12px;
+    gap: 8px;
+  }
+  
+  .logo-text {
+    font-size: 16px;
+  }
+  
+  .ai-logo {
+    width: 32px;
+    height: 32px;
+    font-size: 12px;
+    margin-right: 8px;
   }
   
   .github-btn,
   .language-selector {
-    font-size: 12px;
-    padding: 6px 10px;
+    font-size: 11px;
+    padding: 4px 6px;
   }
   
   .github-icon {
-    width: 18px;
-    height: 18px;
+    width: 16px;
+    height: 16px;
+  }
+  
+  .language-selector .lang-text {
+    font-size: 11px;
+  }
+  
+  .language-selector .globe-icon {
+    font-size: 14px;
+  }
+  
+  /* 确保用户头像在小屏幕上仍然可见 */
+  .nav-avatar {
+    margin-left: 2px;
+  }
+}
+
+/* 汉堡菜单按钮 */
+.mobile-menu-btn {
+  display: none;
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 8px;
+  margin-left: 8px;
+}
+
+.hamburger {
+  display: flex;
+  flex-direction: column;
+  width: 24px;
+  height: 18px;
+  position: relative;
+}
+
+.hamburger span {
+  display: block;
+  height: 2px;
+  width: 100%;
+  background: #333;
+  border-radius: 1px;
+  transition: all 0.3s ease;
+  transform-origin: center;
+}
+
+.hamburger span:nth-child(1) {
+  margin-bottom: 4px;
+}
+
+.hamburger span:nth-child(2) {
+  margin-bottom: 4px;
+}
+
+.hamburger.active span:nth-child(1) {
+  transform: rotate(45deg) translate(5px, 5px);
+}
+
+.hamburger.active span:nth-child(2) {
+  opacity: 0;
+}
+
+.hamburger.active span:nth-child(3) {
+  transform: rotate(-45deg) translate(7px, -6px);
+}
+
+/* 移动端菜单 */
+.mobile-menu {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  z-index: 999;
+}
+
+.mobile-menu-content {
+  padding: 16px 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.mobile-nav-link {
+  background: none;
+  border: none;
+  color: #333;
+  font-size: 16px;
+  font-weight: 500;
+  text-align: left;
+  padding: 12px 0;
+  cursor: pointer;
+  transition: color 0.3s ease;
+  border-bottom: 1px solid #f0f0f0;
+}
+
+.mobile-nav-link:last-child {
+  border-bottom: none;
+}
+
+.mobile-nav-link:hover {
+  color: #165DFF;
+}
+
+.mobile-nav-link.active {
+  color: #165DFF;
+  font-weight: 600;
+}
+
+/* 移动端显示汉堡菜单 */
+@media (max-width: 768px) {
+  .mobile-menu-btn {
+    display: block;
   }
 }

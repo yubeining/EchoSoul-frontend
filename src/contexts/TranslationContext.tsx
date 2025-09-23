@@ -10,10 +10,9 @@ export type TranslationKeys =
   | 'title' | 'subtitle' | 'mobileOrEmail' | 'password' | 'confirmPassword'
   | 'passwordStrength' | 'strengthLabels' | 'agreement' | 'termsOfService' | 'and' | 'privacyPolicy'
   | 'register' | 'hasAccount' | 'loginNow' | 'username' | 'login' | 'guestLogin' | 'noAccount'
-  | 'docCenter' | 'installGuide' | 'userManual' | 'apiReference' | 'techArchitecture' | 'roadmap'
+  | 'docCenter' | 'installGuide' | 'userManual' | 'techArchitecture' | 'roadmap'
   | 'overview' | 'envRequirements' | 'deploySteps' | 'verification' | 'quickStart'
-  | 'interfaceIntro' | 'features' | 'faq' | 'authMethod' | 'chatApi' | 'roleConfig'
-  | 'multimediaApi' | 'systemArch' | 'coreComponents' | 'techStack' | 'systemOverview'
+  | 'interfaceIntro' | 'features' | 'faq' | 'systemArch' | 'coreComponents' | 'techStack' | 'systemOverview'
   | 'coreFeatures' | 'techAdvantages' | 'onThisPage';
 
 // 翻译上下文类型
@@ -82,7 +81,6 @@ export const TranslationProvider: React.FC<TranslationProviderProps> = ({ childr
         docCenter: "文档中心",
         installGuide: "安装指南",
         userManual: "使用手册",
-        apiReference: "API 参考",
         techArchitecture: "技术架构",
         roadmap: "发展路线",
         overview: "概述",
@@ -93,10 +91,6 @@ export const TranslationProvider: React.FC<TranslationProviderProps> = ({ childr
         interfaceIntro: "界面介绍",
         features: "功能模块",
         faq: "常见问题",
-        authMethod: "认证方式",
-        chatApi: "对话接口",
-        roleConfig: "角色配置接口",
-        multimediaApi: "多媒体接口",
         systemArch: "系统架构图",
         coreComponents: "核心组件",
         techStack: "技术栈",
@@ -148,7 +142,6 @@ export const TranslationProvider: React.FC<TranslationProviderProps> = ({ childr
         docCenter: "Documentation Center",
         installGuide: "Installation Guide",
         userManual: "User Manual",
-        apiReference: "API Reference",
         techArchitecture: "Technical Architecture",
         roadmap: "Roadmap",
         overview: "Overview",
@@ -159,10 +152,6 @@ export const TranslationProvider: React.FC<TranslationProviderProps> = ({ childr
         interfaceIntro: "Interface Introduction",
         features: "Features",
         faq: "FAQ",
-        authMethod: "Authentication",
-        chatApi: "Chat API",
-        roleConfig: "Role Configuration",
-        multimediaApi: "Multimedia API",
         systemArch: "System Architecture",
         coreComponents: "Core Components",
         techStack: "Technology Stack",
@@ -214,7 +203,6 @@ export const TranslationProvider: React.FC<TranslationProviderProps> = ({ childr
         docCenter: "ドキュメントセンター",
         installGuide: "インストールガイド",
         userManual: "ユーザーマニュアル",
-        apiReference: "APIリファレンス",
         techArchitecture: "技術アーキテクチャ",
         roadmap: "ロードマップ",
         overview: "概要",
@@ -225,10 +213,6 @@ export const TranslationProvider: React.FC<TranslationProviderProps> = ({ childr
         interfaceIntro: "インターフェース紹介",
         features: "機能",
         faq: "FAQ",
-        authMethod: "認証方法",
-        chatApi: "チャットAPI",
-        roleConfig: "ロール設定",
-        multimediaApi: "マルチメディアAPI",
         systemArch: "システムアーキテクチャ",
         coreComponents: "コアコンポーネント",
         techStack: "技術スタック",

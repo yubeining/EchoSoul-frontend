@@ -96,8 +96,8 @@ class WebSocketService extends BaseWebSocketService {
         // 生产环境
         return 'wss://ohciuodbxwdp.sealosbja.site';
       } else {
-        // 本地开发环境
-        return process.env.REACT_APP_WS_URL || 'ws://localhost:8080';
+        // 本地开发环境 - 使用与API相同的服务器
+        return process.env.REACT_APP_WS_URL || 'wss://glbbvnrguhix.sealosbja.site';
       }
     };
     
@@ -132,6 +132,12 @@ class WebSocketService extends BaseWebSocketService {
       this.ws.send(JSON.stringify(data));
     } else {
       wsError('WebSocket未连接，无法发送消息，当前状态:', this.ws?.readyState);
+      wsError('WebSocket连接详情:', {
+        ws: !!this.ws,
+        readyState: this.ws?.readyState,
+        isConnected: this.isConnected,
+        url: this.url
+      });
     }
   }
 
@@ -160,9 +166,8 @@ class WebSocketService extends BaseWebSocketService {
   // 发送输入状态
   sendTypingStatus(isTyping: boolean): void {
     this.send({
-      type: 'typing_status',
-      is_typing: isTyping,
-      timestamp: new Date().toISOString()
+      type: 'typing',
+      is_typing: isTyping
     });
   }
 
@@ -203,8 +208,7 @@ class WebSocketService extends BaseWebSocketService {
   // 获取在线状态
   getOnlineStatus(userId: number): void {
     this.send({
-      type: 'get_online_status',
-      user_id: userId
+      type: 'get_online_status'
     });
   }
 }

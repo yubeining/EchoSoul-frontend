@@ -1,7 +1,7 @@
 import React, { createContext, useContext, useEffect, useState, useCallback, ReactNode } from 'react';
 import { webSocketService, WebSocketEvents } from '../services/websocket';
 import { useAuth } from './AuthContext';
-import { warn, error as logError } from '../utils/logger';
+import { warn, error as logError, debug } from '../utils/logger';
 
 // WebSocket状态接口
 interface WebSocketState {
@@ -123,7 +123,16 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       return;
     }
     
-    webSocketService.sendMessage(data);
+    // 按照后端接口文档格式发送消息
+    const message = {
+      type: 'chat_message',
+      content: data.content,
+      message_type: data.message_type || 'text',
+      conversation_id: data.conversation_id
+    };
+    
+    debug('发送WebSocket消息:', message);
+    webSocketService.sendMessage(message);
   };
 
   // 发送输入状态
@@ -171,13 +180,20 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
       // WebSocket连接将在需要时手动触发（如进入聊天页面）
     } else {
       // 用户登出，断开WebSocket连接
-      disconnect();
+      webSocketService.disconnect();
+      setState({
+        isConnected: false,
+        isConnecting: false,
+        error: null,
+        reconnectAttempts: 0
+      });
     }
-  }, [user, token, disconnect]);
+  }, [user, token]);
 
   // 监听WebSocket连接状态变化
   useEffect(() => {
     const handleConnect = () => {
+      debug('WebSocket连接成功，更新状态');
       setState(prev => ({
         ...prev,
         isConnected: true,
@@ -188,6 +204,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
     };
 
     const handleDisconnect = () => {
+      debug('WebSocket连接断开，更新状态');
       setState(prev => ({
         ...prev,
         isConnected: false,
@@ -196,6 +213,7 @@ export const WebSocketProvider: React.FC<WebSocketProviderProps> = ({ children }
     };
 
     const handleError = (error: Error) => {
+      debug('WebSocket连接错误:', error);
       setState(prev => ({
         ...prev,
         isConnected: false,

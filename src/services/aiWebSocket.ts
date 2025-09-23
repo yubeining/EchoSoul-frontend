@@ -49,8 +49,9 @@ export class AIWebSocketService extends BaseWebSocketService {
   private eventListeners: Partial<AIWebSocketEvents> = {};
 
   constructor(userId: string, baseUrl: string = 'ws://localhost:8080', token?: string) {
-    // const urlParams = token ? `?token=${encodeURIComponent(token)}` : '';
-    const url = `${baseUrl}/api/ws/ai-chat/${userId}`;
+    // 按照后端接口文档格式构建URL，包含token参数
+    const urlParams = token ? `?token=${encodeURIComponent(token)}` : '';
+    const url = `${baseUrl}/api/ws/ai-chat/${userId}${urlParams}`;
     super(url);
     this.userId = userId;
   }
