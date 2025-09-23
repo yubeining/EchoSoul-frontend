@@ -3,6 +3,7 @@ import '../../styles/pages/LoginPage.css';
 import Navigation from '../../components/layout/Navigation';
 import { useAuth } from '../../contexts/AuthContext';
 import { error as logError } from '../../utils/logger';
+import { showNotification } from '../../utils/notificationManager';
 
 interface LoginPageProps {
   onNavigate: (page: string) => void;
@@ -34,7 +35,7 @@ const LoginPage: React.FC<LoginPageProps> = ({
     e.preventDefault();
     
     if (!formData.username || !formData.password) {
-      alert('请输入用户名和密码');
+      showNotification.warning('请输入用户名和密码');
       return;
     }
 
@@ -45,14 +46,14 @@ const LoginPage: React.FC<LoginPageProps> = ({
       });
 
       if (success) {
-        alert('登录成功！');
+        showNotification.success('登录成功！');
         onNavigate('dashboard');
       } else {
-        alert('登录失败，请检查用户名和密码');
+        showNotification.error('登录失败，请检查用户名和密码');
       }
     } catch (error) {
       logError('登录错误:', error);
-      alert('登录失败，请稍后重试');
+      showNotification.error('登录失败，请稍后重试');
     }
   };
 

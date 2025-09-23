@@ -900,8 +900,10 @@ export const errorHandler = {
 
   // 显示错误消息
   showError(message: string): void {
-    // 这里可以集成toast通知库
-    alert(message);
+    // 使用通知管理器显示错误
+    import('../utils/notificationManager').then(({ showNotification }) => {
+      showNotification.error(message);
+    });
   },
 };
 

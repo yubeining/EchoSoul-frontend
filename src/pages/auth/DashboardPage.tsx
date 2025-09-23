@@ -11,6 +11,7 @@ import { useUserSearch, UserSearchResult as UserSearchResultType } from '../../h
 import { useChat } from '../../hooks/useChat';
 import { aiCharacterApi, aiChatApi, CreateAICharacterRequest } from '../../services/api';
 import { debug, error as logError } from '../../utils/logger';
+import { showNotification } from '../../utils/notificationManager';
 
 interface DashboardPageProps {
   onNavigate: (page: string) => void;
@@ -243,7 +244,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
 
   const handleStartAIChat = async (character: any) => {
     if (!user) {
-      alert('请先登录');
+      showNotification.warning('请先登录');
       return;
     }
 
@@ -258,18 +259,18 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
         onNavigate('chat');
         window.history.pushState({}, '', chatUrl);
       } else {
-        alert(response.msg || '创建会话失败');
+        showNotification.error(response.msg || '创建会话失败');
       }
     } catch (error: any) {
       logError('创建AI会话失败:', error);
-      alert(error.message || '创建AI会话失败');
+      showNotification.error(error.message || '创建AI会话失败');
     }
   };
 
   // 处理用户操作
   const handleStartChat = async (targetUser: UserSearchResultType) => {
     if (!user) {
-      alert('请先登录');
+      showNotification.warning('请先登录');
       return;
     }
     
@@ -295,7 +296,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
         }, 100);
       } else {
         logError('会话创建失败，conversation为null');
-        alert('创建会话失败，请重试');
+        showNotification.error('创建会话失败，请重试');
       }
     } catch (error: any) {
       logError('创建会话失败:', error);
@@ -317,7 +318,7 @@ const DashboardPage: React.FC<DashboardPageProps> = ({
         }
       }
       
-      alert(errorMessage);
+      showNotification.error(errorMessage);
     }
   };
 

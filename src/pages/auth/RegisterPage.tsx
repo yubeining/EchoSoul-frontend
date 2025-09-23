@@ -5,6 +5,7 @@ import { useTranslation } from '../../contexts/TranslationContext';
 import { useAuth } from '../../contexts/AuthContext';
 import { getPasswordStrength } from '../../utils/passwordUtils';
 import { error as logError } from '../../utils/logger';
+import { showNotification } from '../../utils/notificationManager';
 
 interface RegisterPageProps {
   onNavigate: (page: string) => void;
@@ -38,19 +39,19 @@ const RegisterPage: React.FC<RegisterPageProps> = ({
     e.preventDefault();
     
     if (!agreedToTerms) {
-      alert('请先同意用户服务协议和隐私政策');
+      showNotification.warning('请先同意用户服务协议和隐私政策');
       return;
     }
 
     // 验证密码匹配
     if (formData.password !== formData.confirmPassword) {
-      alert('两次输入的密码不一致');
+      showNotification.warning('两次输入的密码不一致');
       return;
     }
 
     // 验证密码强度
     if (passwordStrengthInfo.score < 2) {
-      alert('密码强度太弱，请使用更复杂的密码');
+      showNotification.warning('密码强度太弱，请使用更复杂的密码');
       return;
     }
 
@@ -63,14 +64,14 @@ const RegisterPage: React.FC<RegisterPageProps> = ({
       });
 
       if (success) {
-        alert('注册成功！');
+        showNotification.success('注册成功！');
         onNavigate('dashboard');
       } else {
-        alert('注册失败，请检查输入信息');
+        showNotification.error('注册失败，请检查输入信息');
       }
     } catch (error) {
       logError('注册错误:', error);
-      alert('注册失败，请稍后重试');
+      showNotification.error('注册失败，请稍后重试');
     }
   };
 

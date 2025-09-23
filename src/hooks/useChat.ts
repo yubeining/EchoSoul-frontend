@@ -728,7 +728,7 @@ export const useChat = () => {
       delete newUnread[conversationId];
       return newUnread;
     });
-  }, []);
+  }, [currentConversation?.conversation_id]);
 
   // 发送输入状态
   const sendTyping = useCallback((isTyping: boolean) => {

@@ -106,8 +106,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         }
       }
       
-      // 可以在这里添加用户友好的错误提示
-      console.error('登录错误详情:', {
+      // 记录登录错误详情
+      logError('登录错误详情:', {
         message: errorMessage,
         originalError: error,
         timestamp: new Date().toISOString()
